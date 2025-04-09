@@ -1,0 +1,63 @@
+% CREATED BY C. DITTMER, 2023
+
+\documentclass[12pt,a4paper]{report}
+\input{Settings/Settings}
+
+%-----For changes the Titlepage-----------------------------------------------
+\newcommand{\myTitle}{A Short descriptive title of the work. }
+\newcommand{\mySubTitle}{- Optional subtitle}
+
+%-----For changes the Infopage------------------------------------------------
+\newcommand{\myInfoYear}{2099}
+\newcommand{\myTurnInDate}{January 20, 2099}
+\newcommand{\myName}{First Last}
+\newcommand{\myExaminer}{First Last}
+\newcommand{\myAdvisor}{First Last}
+\newcommand{\myKeyWords}{Word1, Word2, Word3, Word4, Word5}
+
+\begin{document}
+
+%-----Can be found in Intropages folder---------------------------------------
+\pagenumbering{roman}
+\input{Intropages/1_Titlepage.tex}
+\input{Intropages/2_Infopage.tex}
+\setcounter{page}{2}    % otherwise page number on titlepage
+\input{Intropages/3_Summary.tex}
+\input{Intropages/4_Preface.tex}
+\input{Intropages/5_Affirmation.tex}
+\input{Intropages/6_Contents.tex}
+\input{Intropages/7_Symbols and glossary.tex}
+
+
+%-----Can be found in sections  folder----------------------------------------
+\pagenumbering{gobble}  % Reseting the pagenumbering
+\pagenumbering{arabic}  % Changing style on pagenumbering
+
+\input{sections/1_Introduction.tex}
+\input{sections/2_Related Work (Background).tex}
+\input{sections/3_Method.tex}
+\input{sections/4_Work.tex}
+\input{sections/5_Results and Discussion.tex}
+\input{sections/6_Conclusion.tex}
+
+%-----Can be found in backmatter folder----------------------------------------
+\input{Lastpages/References.tex}
+
+\input{Lastpages/Appendix_A.tex}
+\input{Lastpages/Appendix_B.tex}
+% \input{Lastpages/Appendix_C.tex}
+% \input{Lastpages/Appendix_D.tex}
+
+\end{document}
+
+\begin{comment}
+Quick templates for figures
+
+\begin{figure}[hbt!]
+\centering
+\includegraphics[width=0.75\linewidth]{figures/images/something.PNG}
+\caption{Figure of something}
+\label{something}
+\end{figure}
+
+\end{comment}

@@ -1,0 +1,84 @@
+% CREATED BY C. DITTMER, 2023
+
+% BASIC SETTINGS
+\usepackage[english]{babel}							% Language settings
+\usepackage[utf8]{inputenc}							% Input settings
+
+\usepackage{tabularx}
+\usepackage{textcomp}								% Fonts, symbols etc.
+\usepackage{fancyhdr}	                            % Header and footer settings
+\usepackage{float}                                  % Enables object position enforcement using [H]
+
+\usepackage{comment}                                % comment large sections: \begin{comment} ... \end{comment}
+\usepackage{moreverb}								% List settings
+\usepackage{textcomp}								% Fonts, symbols etc.
+\usepackage{lmodern}								% Latin modern font
+\usepackage{helvet}									% Enables font switching
+\usepackage[T1]{fontenc}							% Output settings
+
+\usepackage{ragged2e}                               % Text alignment
+\usepackage{amsmath}								% Mathematical expressions (American mathematical society)
+\usepackage{amssymb}								% Mathematical symbols (American mathematical society)
+\usepackage{amsthm}
+
+\usepackage{soul}                                   % \st{Hello World}
+
+\usepackage{graphicx}								% Figures
+\usepackage{tabularx}                               % Tables
+\usepackage{subfig}									% Enables subfigures
+\numberwithin{equation}{chapter}					% Numbering order for equations
+\numberwithin{figure}{chapter}						% Numbering order for figures
+\numberwithin{table}{chapter}						% Numbering order for tables
+\usepackage{listings}								% Enables source code listings
+
+\usepackage[top=3cm, bottom=3cm,
+			inner=3cm, outer=3cm]{geometry}			% Page margin lengths			
+
+%\usepackage{etoolbox}
+\usepackage{tocbibind}
+\usepackage[subfigure]{tocloft}
+\usepackage{xcolor}
+
+% Activate clickable links in table of contents  
+\usepackage{url}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    citecolor=black,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={University West Master Thesis Template 2023},
+    pdfpagemode=FullScreen,}
+    
+
+% OPTIONAL SETTINGS (DELETE OR COMMENT TO SUPRESS)
+
+% Disable automatic indentation (equal to using \noindent)
+\setlength{\parindent}{0cm}                         
+		
+% Chapter title settings
+\usepackage{titlesec}
+\usepackage{titletoc}
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+\makeatletter
+\def\@makechapterhead#1{%
+  {\parindent \z@ \raggedright \normalfont
+    \ifnum \c@secnumdepth >\m@ne
+        \huge\bfseries \thechapter.\ % <-- Chapter # (without "Chapter")
+    \fi
+    \interlinepenalty\@M
+    #1\par\nobreak% <------------------ Chapter title
+    \vskip 40\p@% <------------------ Space between chapter title and first paragraph
+  }}
+\makeatother
+
+% Enable To-do notes
+\usepackage[textsize=tiny]{todonotes}   % Include the option "disable" to hide all notes
+\setlength{\marginparwidth}{2.5cm} 
+
+% Supress warning from Texmaker about headheight
+\setlength{\headheight}{25pt}		

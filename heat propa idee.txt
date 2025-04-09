@@ -1,0 +1,13 @@
+differential equation;
+abb studio try send signal and fetch it in the code;
+diff equa consider the layer and geometry, 
+implement indiv coefficient for each equation, that represent different geometry.
+
+bool arc on/off for printing or no during transition; 
+
+
+
+
+entrainer ia sur differente form, choisir la forme qui refroidira le moins vite et commencer par la
+find geometrie with ai to adjust heat equation maybe with ai
+Queue, when finish go back to one.
