@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.ndimage import label, binary_closing
+from scipy.ndimage import label, binary_closing, binary_dilation, binary_erosion
 import json
 
 with open("deposition_points.json", "r") as f:
@@ -25,7 +25,7 @@ print(f"  Z: {z_min} to {z_max_data} (range={z_range})")
 
 # Use a coarser grid resolution to merge nearby points
 # Define voxel grid resolution
-nx, ny, nz = 500,500,50
+nx, ny, nz = 2000,2000,14
 voxel_grid = np.zeros((nx, ny, nz), dtype=int)
 
 # Function to map real-world coordinates to voxel indices using shift/scale
@@ -36,28 +36,54 @@ def point_to_voxel_indices(x, y, z, nx, ny, nz, x_min, y_min, z_min, x_range, y_
     return ix, iy, iz
 
 
-
-
 # 3. Fill the Voxel Grid from Deposition Points
+def fill_local_2d(voxel_grid, ix, iy, iz, radius=1):
+    """
+    Fills a local neighborhood around voxel (ix, iy, iz) in the same z slice.
+    For radius=1, fills a 3x3 block.
+    """
+    nx, ny, nz = voxel_grid.shape
+    for dx in range(-radius, radius + 1):
+        for dy in range(-radius, radius + 1):
+            x_idx = ix + dx
+            y_idx = iy + dy
+            if 0 <= x_idx < nx and 0 <= y_idx < ny:
+                voxel_grid[x_idx, y_idx, iz] = 1
 
+# 3. Fill the Voxel Grid from Deposition Points using local 2D fill
 for point in deposition_points:
     x, y, z = point
     ix, iy, iz = point_to_voxel_indices(x, y, z, nx, ny, nz, x_min, y_min, z_min, x_range, y_range, z_range)
-    voxel_grid[ix, iy, iz] = 1
+    #voxel_grid[ix,iy,iz] = 1
+    fill_local_2d(voxel_grid, ix, iy, iz, radius=3)
 
-voxel_grid = binary_closing(voxel_grid, structure=np.ones((2,2,2))).astype(int)
 
-# # Example 2D anisotropic struct: merges horizontally more than vertically
-# struct_2d = np.ones((2, 3,2), dtype=int)  
-# # For 3D, you might shape it like (1,3,1) or (3,1,1), etc.
+# voxel_grid = binary_closing(voxel_grid, structure=np.ones((2,2,2))).astype(int)
+anisotropic_struct = np.ones((3,3, 5), dtype=int) # 3 3 5 best for now
+voxel_grid = binary_closing(voxel_grid, structure=anisotropic_struct).astype(int)
 
-# voxel_grid = binary_closing(voxel_grid, structure=struct_2d).astype(int)
+def vertical_smoothing(voxel_grid, window=3):
+    # A majority-vote smoothing across z-slices to enforce vertical continuity.
+    Nz = voxel_grid.shape[2]
+    smoothed = np.copy(voxel_grid)
+    offset = window // 2
+    for z in range(Nz):
+        lower = max(z - offset, 0)
+        upper = min(z + offset + 1, Nz)
+        # Sum over the window of slices
+        local_sum = np.sum(voxel_grid[:, :, lower:upper], axis=2)
+        # If more than half of the slices in the window are filled, set current slice filled.
+        smoothed[:, :, z] = (local_sum > (window // 2)).astype(int)
+    return smoothed
+
+# Uncomment the next line to apply vertical smoothing:
+voxel_grid = vertical_smoothing(voxel_grid, window=2)
 
 
 # 4. Visualize a 2D Slice of the Voxel Grid
 
 # Visualize a 2D slice of the voxel grid (choose a slice that seems to contain points)
-slice_index = nz // 2
+slice_index = 13
 plt.imshow(voxel_grid[:, :, slice_index], cmap='gray', origin='lower',
            extent=[0, nx, 0, ny])
 plt.title(f'Voxel Grid Slice at z-index {slice_index}')

@@ -11,3 +11,6 @@ bool arc on/off for printing or no during transition;
 entrainer ia sur differente form, choisir la forme qui refroidira le moins vite et commencer par la
 find geometrie with ai to adjust heat equation maybe with ai
 Queue, when finish go back to one.
+
+abb webservice to find url path to get things from abb studio
+
