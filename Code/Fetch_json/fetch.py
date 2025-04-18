@@ -1,7 +1,7 @@
 import requests
 from requests.auth import HTTPDigestAuth
 import time
-from heat_map import  RealTime2DGridMap, RealTime3DMap
+from maping import  RealTime2DGridMap, RealTime3DMap
 from geometry_reconstruction import process_deposition_points
 import json
 
