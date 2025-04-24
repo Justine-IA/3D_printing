@@ -79,24 +79,25 @@ def fetch_welding():
 
 
 # Run the loop to continuously fetch x, y, z
+def run_fetch_loop():
+    deposition_points = []
+    try:
+        while True:
+            x, y, z = fetch_xyz()
+            weld = fetch_welding()
+            if x is not None and y is not None and weld is True:
+                deposition_points.append((x, y, z))
+                map_3d.update_plot(x, y, z)
+                # map_2d.heat_propagation(x, y)
 
-try:
-    while True:
-        x, y, z = fetch_xyz()
-        weld = fetch_welding()
-        if x is not None and y is not None and weld is True:
-            deposition_points.append((x, y, z))
-            map_3d.update_plot(x, y, z)
-            # map_2d.heat_propagation(x, y)
+            time.sleep(0.001)
+    except KeyboardInterrupt:
+        print("Loop stopped by user.")
+    finally:
+        map_3d.show()
+        # map_2d.show()
+        
 
-        time.sleep(0.001)
-except KeyboardInterrupt:
-    print("Loop stopped by user.")
-finally:
-     map_3d.show()
-    # map_2d.show()
-    
-
-with open("deposition_points.json", "w") as f:
-    json.dump(deposition_points, f)
-print("Deposition points saved to deposition_points.json")
+    with open("deposition_points.json", "w") as f:
+        json.dump(deposition_points, f)
+    print("Deposition points saved to deposition_points.json")

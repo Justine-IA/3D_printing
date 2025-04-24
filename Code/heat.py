@@ -3,6 +3,7 @@ import json
 import gzip
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
+from geometry_analysis import analyze_geometry
 
 
 def load_voxel_data(gz_file):
@@ -33,42 +34,6 @@ def voxel_parameters(neighbor_temp, geom):
     gamma = 1e-8 + 5e-8 * compactness + 1e-8 * (distance / 10.0)
 
     return alpha, beta, gamma
-
-def analyze_geometry(active_pixels, bbox_dims):
-    if len(active_pixels) < 2:
-        return {
-            "avg_wall_thickness": 0,
-            "avg_distance": 0,
-            "bounding_box_area": 0,
-            "filled_area": 0,
-            "compactness": 0,
-            "density": 0,
-            "wall_count_estimate": 0,
-            "max_internal_gap": 0,
-        }
-
-    coords = np.array(active_pixels)
-    tree = KDTree(coords)
-    dists, _ = tree.query(coords, k=6)  # 5 nearest neighbors + self
-    wall_thickness = np.mean(dists[:, 1])  # skip self (0 distance)
-    avg_distance = np.mean(dists[:, 1:])
-    max_gap = np.max(dists[:, 1:])
-
-    bbox_area = bbox_dims[0] * bbox_dims[1]
-    filled_area = len(active_pixels)
-    compactness = filled_area / bbox_area if bbox_area > 0 else 0
-    density = filled_area / max(bbox_area, 1)
-
-    return {
-        "avg_wall_thickness": wall_thickness,
-        "avg_distance": avg_distance,
-        "bounding_box_area": bbox_area,
-        "filled_area": filled_area,
-        "compactness": compactness,
-        "density": density,
-        "wall_count_estimate": 1,
-        "max_internal_gap": max_gap,
-    }
 
 def simulate_heat(voxel_data_path, nz=14, nx=2000, ny=2000, T_init=20.0, T_amb=20.0, Q_val=660.0, dt=1.0, steps_per_layer=1):
     voxel_data = load_voxel_data(voxel_data_path)
