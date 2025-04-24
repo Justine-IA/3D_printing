@@ -30,7 +30,7 @@ def voxel_parameters(neighbor_temp, geom):
 
     alpha = 0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density
     beta = 0.002 + 0.003 * (1 - compactness) + 0.001 * (gap / 50.0)
-    gamma = 1e-6 + 5e-6 * compactness + 1e-6 * (distance / 10.0)
+    gamma = 1e-8 + 5e-8 * compactness + 1e-8 * (distance / 10.0)
 
     return alpha, beta, gamma
 
@@ -72,7 +72,7 @@ def analyze_geometry(active_pixels, bbox_dims):
 
 def simulate_heat(voxel_data_path, nz=14, nx=2000, ny=2000, T_init=20.0, T_amb=20.0, Q_val=660.0, dt=1.0, steps_per_layer=1):
     voxel_data = load_voxel_data(voxel_data_path)
-    T = np.full((nz, ny, nx), T_init, dtype=np.float32)
+    T = np.full((nz, ny, nx), T_init, dtype=np.float64)
 
     for z in range(nz):
         for _ in range(steps_per_layer):
@@ -113,4 +113,4 @@ def visualize_slice(T, z):
 
 if __name__ == "__main__":
     output = simulate_heat("voxel_bounding_boxes.json.gz")
-    visualize_slice(output, z=7)
+    visualize_slice(output, z=0)
