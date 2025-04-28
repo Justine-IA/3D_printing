@@ -124,7 +124,7 @@ def store_voxel_bounding_boxes(labeled_grid, voxel_dump="voxel_bounding_boxes.js
 # ---------------------------
 # Main Voxel Processing Function
 # ---------------------------
-def process_voxel(deposition_points, nx=2000, ny=2000, nz=14, fill_radius=3):
+def process_voxel(deposition_points,nz, nx, ny, fill_radius=3):
     arr = np.array(deposition_points)
     x_min, x_max_data = arr[:,0].min(), arr[:,0].max()
     y_min, y_max_data = arr[:,1].min(), arr[:,1].max()
@@ -147,21 +147,35 @@ def process_voxel(deposition_points, nx=2000, ny=2000, nz=14, fill_radius=3):
                                              x_range, y_range, z_range)
         fill_local_2d(voxel_grid, ix, iy, iz, radius=fill_radius)
 
-    anisotropic_struct = np.ones((3, 3, 5), dtype=int)
-    voxel_grid = binary_closing(voxel_grid, structure=anisotropic_struct).astype(int)
-    voxel_grid = vertical_smoothing(voxel_grid, window=3)
-    struct_2d = np.ones((3, 3), dtype=int)
-    for z in range(1, nz - 1):
-        slice_2d = voxel_grid[:, :, z]
-        slice_closed = binary_closing(slice_2d, structure=struct_2d)
-        voxel_grid[:, :, z] = slice_closed
+    # anisotropic_struct = np.ones((3, 3, 5), dtype=int)
+    # voxel_grid = binary_closing(voxel_grid, structure=anisotropic_struct).astype(int)
+    # voxel_grid = vertical_smoothing(voxel_grid, window=3)
+    # struct_2d = np.ones((3, 3), dtype=int)
+    # for z in range(1, nz - 1):
+    #     slice_2d = voxel_grid[:, :, z]
+    #     slice_closed = binary_closing(slice_2d, structure=struct_2d)
+    #     voxel_grid[:, :, z] = slice_closed
+    # ---- corrected closing for arbitrary nz ----
+    struct2d = np.ones((3, 3), dtype=int)
+    if nz == 1:
+        # single‐slice: do a plain 2D closing on slice 0
+        voxel_grid[:, :, 0] = binary_closing(voxel_grid[:, :, 0], structure=struct2d).astype(int)
+    else:
+        # multi‐slice: 3D closing with depth capped at nz
+        depth = min(5, nz)
+        anisotropic_struct = np.ones((3, 3, depth), dtype=int)
+        voxel_grid = binary_closing(voxel_grid, structure=anisotropic_struct).astype(int)
+        # then vertical smoothing
+        voxel_grid = vertical_smoothing(voxel_grid, window=3)
+        # and a final 2D closing on each interior slice
+        for z in range(1, nz - 1):
+           voxel_grid[:, :, z] = binary_closing(voxel_grid[:, :, z], structure=struct2d)
 
-    # # Optional: visualize a slice for debugging
-    slice_to_show = nz//2
+    # Optional: visualize a slice for debugging
+    slice_to_show = 0 if nz == 1 else nz - 1 
     plt.imshow(voxel_grid[:, :, slice_to_show], cmap='gray', origin='lower', extent=[0, nx, 0, ny])
     plt.title(f'Voxel Slice {slice_to_show}')
-    plt.show()
-
+    plt.show(block = False)
 
     structure = np.ones((3, 3, 3))
     labeled_grid, num_features = label(voxel_grid, structure=structure)
@@ -178,3 +192,6 @@ def process_voxel(deposition_points, nx=2000, ny=2000, nz=14, fill_radius=3):
 
     store_voxel_bounding_boxes(labeled_grid, voxel_dump="voxel_bounding_boxes.json.gz")
     return voxel_grid, labeled_grid, final_num_pieces
+
+
+

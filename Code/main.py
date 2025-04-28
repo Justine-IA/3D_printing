@@ -3,7 +3,7 @@ from geometry_reconstruction import process_deposition_points
 from Voxel_grid import process_voxel
 from heat import simulate_heat, visualize_slice
 from fetch import run_fetch_loop
-from ABB_control import set_pause_printing
+from ABB_control import fetch_number_of_layer
 
 import json
 import time
@@ -39,15 +39,17 @@ def main():
         #show the general geometry of the shape
         # process_deposition_points(deposition_points, layer_height=1, eps=40, min_samples=5)
 
-
+        nz = fetch_number_of_layer()
+        print(f"number of layers:{nz}")
+        ny, nx = (1000,1000) if nz == 1 else (2000,2000)
         #compute the voxel representation
-        voxel_grid, labeled_grid, num_features = process_voxel(deposition_points, nx=2000, ny=2000, nz=1, fill_radius=3)
+        voxel_grid, labeled_grid, num_features = process_voxel(deposition_points,nz, nx, ny, fill_radius=3)
         print("Voxel processing complete. Number of components:", num_features)
 
         #compute the heat propagation inside all pieces 
-        output = simulate_heat("voxel_bounding_boxes.json.gz", nz=1, nx=2000, ny=2000,steps_per_layer=1)
+        output = simulate_heat("voxel_bounding_boxes.json.gz", nz, nx, ny,steps_per_layer=1)
 
-        visualize_slice(output, z=0)
+        visualize_slice(output, z=nz-1)
 
 
 

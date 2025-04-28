@@ -35,7 +35,7 @@ def voxel_parameters(neighbor_temp, geom):
 
     return alpha, beta, gamma
 
-def simulate_heat(voxel_data_path, nz=14, nx=2000, ny=2000, T_init=20.0, T_amb=20.0, Q_val=660.0, dt=1.0, steps_per_layer=1):
+def simulate_heat(voxel_data_path, nz, nx, ny, T_init=20.0, T_amb=20.0, Q_val=660.0, dt=1.0, steps_per_layer=1):
     voxel_data = load_voxel_data(voxel_data_path)
     T = np.full((nz, ny, nx), T_init, dtype=np.float64)
 

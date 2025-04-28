@@ -132,7 +132,3 @@ def run_fetch_loop(path):
         print("Loop stopped by user.")
 
         
-
-    # with open("deposition_points_test.json", "w") as f:
-    #     json.dump(deposition_points, f)
-    # print("Deposition points saved to deposition_points_test.json")
