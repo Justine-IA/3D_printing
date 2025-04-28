@@ -157,10 +157,10 @@ def process_voxel(deposition_points, nx=2000, ny=2000, nz=14, fill_radius=3):
         voxel_grid[:, :, z] = slice_closed
 
     # # Optional: visualize a slice for debugging
-    # slice_to_show = nz//2
-    # plt.imshow(voxel_grid[:, :, slice_to_show], cmap='gray', origin='lower', extent=[0, nx, 0, ny])
-    # plt.title(f'Voxel Slice {slice_to_show}')
-    # plt.show()
+    slice_to_show = nz//2
+    plt.imshow(voxel_grid[:, :, slice_to_show], cmap='gray', origin='lower', extent=[0, nx, 0, ny])
+    plt.title(f'Voxel Slice {slice_to_show}')
+    plt.show()
 
 
     structure = np.ones((3, 3, 3))
@@ -177,5 +177,4 @@ def process_voxel(deposition_points, nx=2000, ny=2000, nz=14, fill_radius=3):
     print("Number of printed pieces after relabeling:", final_num_pieces)
 
     store_voxel_bounding_boxes(labeled_grid, voxel_dump="voxel_bounding_boxes.json.gz")
-
     return voxel_grid, labeled_grid, final_num_pieces
