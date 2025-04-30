@@ -175,7 +175,7 @@ def process_voxel(deposition_points,nz, nx, ny, fill_radius=3):
     slice_to_show = 0 if nz == 1 else nz - 1 
     plt.imshow(voxel_grid[:, :, slice_to_show], cmap='gray', origin='lower', extent=[0, nx, 0, ny])
     plt.title(f'Voxel Slice {slice_to_show}')
-    plt.show(block = False)
+    plt.show()
 
     structure = np.ones((3, 3, 3))
     labeled_grid, num_features = label(voxel_grid, structure=structure)

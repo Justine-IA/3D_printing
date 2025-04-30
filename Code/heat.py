@@ -4,6 +4,7 @@ import gzip
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from geometry_analysis import analyze_geometry
+from ABB_control import fetch_number_of_layer
 import csv
 
 def load_voxel_data(gz_file):
@@ -22,20 +23,22 @@ def get_voxel_neighbors(temp_grid, z, y, x):
     ]
     return np.mean(neighbors) if neighbors else temp_grid[z, y, x]
 
-def voxel_parameters(neighbor_temp, geom):
+def voxel_parameters(neighbor_temp, geom, nz):
     compactness = geom["compactness"]
     thickness = geom["avg_wall_thickness"]
     distance = geom["avg_distance"]
     density = geom["density"]
     gap = geom["max_internal_gap"]
+    number_layer = nz
 
-    alpha = 0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density
+    alpha = (0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density)*(number_layer*0.5)
     beta = 0.002 + 0.003 * (1 - compactness) + 0.001 * (gap / 50.0)
     gamma = 1e-8 + 5e-8 * compactness + 1e-8 * (distance / 10.0)
 
     return alpha, beta, gamma
 
 def simulate_heat(voxel_data_path, nz, nx, ny, T_init=20.0, T_amb=20.0, Q_val=660.0, dt=1.0, steps_per_layer=1):
+    print("Starting the simulation of the heat")
     voxel_data = load_voxel_data(voxel_data_path)
     T = np.full((nz, ny, nx), T_init, dtype=np.float64)
 
@@ -61,13 +64,98 @@ def simulate_heat(voxel_data_path, nz, nx, ny, T_init=20.0, T_amb=20.0, Q_val=66
                         neighbor_T = get_voxel_neighbors(T, z, y, x)
                         averaged_T = 0.6 * local_T + 0.4 * neighbor_T
 
-                        alpha, beta, gamma = voxel_parameters(neighbor_T, geometry_stats)
+                        alpha, beta, gamma = voxel_parameters(neighbor_T, geometry_stats, nz)
 
                         T_new[z, y, x] += dt * heat_equation_ode(averaged_T, Q_val, T_amb, alpha, beta, gamma)
 
             T = T_new
 
     return T
+
+
+def step_heat(T, voxel_data, active_layer, Q_val, T_amb, dt,nx,ny):
+    """
+    Advance T by dt seconds.
+    Only voxels in `active_layer` get the Q_val heating; the rest just cool + diffuse.
+    """
+    nz, ny, nx = T.shape
+    T_new = T.copy()
+
+    # loop exactly like your simulate_heat inner loop
+    for piece_id, layers in voxel_data.items():
+        for z_str, info in layers.items():
+            z = int(z_str)
+            bb_min, _ = info["bounding_box"]
+            active_pixels = info["active_pixels"]
+
+            # skip this piece if it's not the active_layer and we're heating
+            is_heating_layer = (active_layer == z)
+
+            # precompute geometry once per layer
+            geom = analyze_geometry(active_pixels,
+                      [info["bounding_box"][1][0] - bb_min[0] + 1,
+                       info["bounding_box"][1][1] - bb_min[1] + 1])
+
+            for rel_y, rel_x in active_pixels:
+                y = bb_min[1] + rel_y
+                x = bb_min[0] + rel_x
+                if not (0 <= x < nx and 0 <= y < ny):
+                   continue
+
+                # conduction: average 8 neighbors in the same slice
+                neighs = []
+                for dy in (-1,0,1):
+                    for dx in (-1,0,1):
+                        if dx==0 and dy==0: continue
+                        yy, xx = y+dy, x+dx
+                        if 0 <= yy < ny and 0 <= xx < nx:
+                            neighs.append(T[z, yy, xx])
+                neighbor_T = np.mean(neighs) if neighs else T[z,y,x]
+
+                # mix local+neighbor
+                avgT = 0.6 * T[z,y,x] + 0.4 * neighbor_T
+
+                # decide heat input: Q_val on this layer, 0 otherwise
+                Q = Q_val if is_heating_layer else 0.0
+
+                # your alpha/beta/gamma
+                α, β, γ = voxel_parameters(neighbor_T, geom)
+
+                # ODE step
+                dT = α*Q - β*(avgT - T_amb) - γ*(avgT**4 - T_amb)
+                T_new[z, y, x] += dt * dT
+
+    return T_new
+
+
+
+def run_real_time_simulation(voxel_data_path,
+                             nz, nx, ny,
+                             dt, print_time, cool_time,
+                             Q_val, T_init, T_amb):
+    # load your voxel bounding boxes once
+    with gzip.open(voxel_data_path, "rt") as f:
+        voxel_data = json.load(f)
+
+    # initialize the field once
+    T = np.full((nz, ny, nx), T_init, dtype=float)
+
+    # compute how many steps to do for each phase
+    n_print = int(print_time / dt)
+    n_cool  = int(cool_time  / dt)
+
+    # loop over layers
+    for z in range(nz):
+        # 1) HEATING PHASE: heat layer z for print_time seconds
+        for _ in range(n_print):
+            T = step_heat(T, voxel_data, z, Q_val, T_amb, dt, nx, ny)
+
+        # 2) COOLING PHASE: no heating for cool_time seconds
+        for _ in range(n_cool):
+            T = step_heat(T, voxel_data, None, 0.0, T_amb, dt, nx, ny)
+
+    return T
+
 
 
 
