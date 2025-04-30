@@ -36,6 +36,7 @@ class RealTime3DMap:
             self.ax.set_title('Real-Time 3D Map of XYZ Coordinates')
             plt.draw()
             #plt.pause(0.0001)  # Pause to allow the plot to update
+            
 
     def show(self):
         plt.show()

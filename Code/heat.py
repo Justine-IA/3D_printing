@@ -4,7 +4,7 @@ import gzip
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from geometry_analysis import analyze_geometry
-
+import csv
 
 def load_voxel_data(gz_file):
     with gzip.open(gz_file, "rt") as f:
@@ -68,6 +68,39 @@ def simulate_heat(voxel_data_path, nz, nx, ny, T_init=20.0, T_amb=20.0, Q_val=66
             T = T_new
 
     return T
+
+
+
+def export_pixel_temperatures(T, voxel_data_path, out_csv="piece_pixel_temps.csv"):
+    """
+    Given the 3D temperature array T[z,y,x] and the voxel dump,
+    writes out CSV rows: piece_id, z, x, y, temperature
+    """
+    # 1) load your bounding-box + active_pixels info
+    with gzip.open(voxel_data_path, "rt") as f:
+        bbox_data = json.load(f)
+
+    # 2) open CSV
+    with open(out_csv, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["piece_id", "z", "x", "y", "temperature"])
+
+        # 3) iterate pieces → layers → pixels
+        for pid_str, layers in bbox_data.items():
+            pid = int(pid_str)
+            for z_str, info in layers.items():
+                z = int(z_str)
+                bb_min, _ = info["bounding_box"]
+                for rel_y, rel_x in info["active_pixels"]:
+                    x = bb_min[0] + rel_x
+                    y = bb_min[1] + rel_y
+                    # bounds-check
+                    if (0 <= z < T.shape[0]
+                        and 0 <= y < T.shape[1]
+                        and 0 <= x < T.shape[2]):
+                        writer.writerow([pid, z, x, y, T[z,y,x]])
+
+    print(f"→ Exported pixel temperatures for {len(bbox_data)} pieces to {out_csv}")
 
 def visualize_slice(T, z):
     plt.figure(figsize=(6, 6))

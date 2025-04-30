@@ -1,7 +1,7 @@
 from maping import RealTime3DMap
 from geometry_reconstruction import process_deposition_points
 from Voxel_grid import process_voxel
-from heat import simulate_heat, visualize_slice
+from heat import simulate_heat, visualize_slice, export_pixel_temperatures
 from fetch import run_fetch_loop
 from ABB_control import fetch_number_of_layer
 
@@ -28,7 +28,6 @@ def main():
 
         #fetch all the points in one layer printed
         run_fetch_loop(path = "deposition_points_test.json")
-        
     
         with open("deposition_points_test.json", "r") as f:
              deposition_points = json.load(f)
@@ -42,14 +41,17 @@ def main():
         nz = fetch_number_of_layer()
         print(f"number of layers:{nz}")
         ny, nx = (1000,1000) if nz == 1 else (2000,2000)
+
         #compute the voxel representation
         voxel_grid, labeled_grid, num_features = process_voxel(deposition_points,nz, nx, ny, fill_radius=3)
         print("Voxel processing complete. Number of components:", num_features)
 
         #compute the heat propagation inside all pieces 
-        output = simulate_heat("voxel_bounding_boxes.json.gz", nz, nx, ny,steps_per_layer=1)
+        output = simulate_heat("voxel_bounding_boxes.json.gz", nz, nx, ny,steps_per_layer=3)
 
         visualize_slice(output, z=nz-1)
+
+        export_pixel_temperatures(output, voxel_data_path="voxel_bounding_boxes.json.gz", out_csv="piece_pixel_temps.csv")
 
 
 
