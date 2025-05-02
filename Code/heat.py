@@ -23,7 +23,7 @@ def get_voxel_neighbors(temp_grid, z, y, x):
     ]
     return np.mean(neighbors) if neighbors else temp_grid[z, y, x]
 
-def voxel_parameters(neighbor_temp, geom, nz):
+def voxel_parameters(neighbor_temp, geom, nz, time_cooling=10):
     compactness = geom["compactness"]
     thickness = geom["avg_wall_thickness"]
     distance = geom["avg_distance"]
@@ -31,9 +31,9 @@ def voxel_parameters(neighbor_temp, geom, nz):
     gap = geom["max_internal_gap"]
     number_layer = nz
 
-    alpha = (0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density)*(number_layer*0.5)
+    alpha = (0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density)*((number_layer+2)/4)
     beta = 0.002 + 0.003 * (1 - compactness) + 0.001 * (gap / 50.0)
-    gamma = 1e-8 + 5e-8 * compactness + 1e-8 * (distance / 10.0)
+    gamma = (1e-8 + 5e-8 * compactness + 1e-8 * (distance / 10.0))*((time_cooling+6)/16)
 
     return alpha, beta, gamma
 
@@ -73,7 +73,7 @@ def simulate_heat(voxel_data_path, nz, nx, ny, T_init=20.0, T_amb=20.0, Q_val=66
     return T
 
 
-def step_heat(T, voxel_data, active_layer, Q_val, T_amb, dt,nx,ny):
+def step_heat(T, voxel_data, active_layer, Q_val, T_amb, dt,nx,ny, nz):
     """
     Advance T by dt seconds.
     Only voxels in `active_layer` get the Q_val heating; the rest just cool + diffuse.
@@ -119,7 +119,7 @@ def step_heat(T, voxel_data, active_layer, Q_val, T_amb, dt,nx,ny):
                 Q = Q_val if is_heating_layer else 0.0
 
                 # your alpha/beta/gamma
-                α, β, γ = voxel_parameters(neighbor_T, geom)
+                α, β, γ = voxel_parameters(neighbor_T, geom, nz)
 
                 # ODE step
                 dT = α*Q - β*(avgT - T_amb) - γ*(avgT**4 - T_amb)
@@ -148,11 +148,11 @@ def run_real_time_simulation(voxel_data_path,
     for z in range(nz):
         # 1) HEATING PHASE: heat layer z for print_time seconds
         for _ in range(n_print):
-            T = step_heat(T, voxel_data, z, Q_val, T_amb, dt, nx, ny)
+            T = step_heat(T, voxel_data, z, Q_val, T_amb, dt, nx, ny, nz)
 
         # 2) COOLING PHASE: no heating for cool_time seconds
         for _ in range(n_cool):
-            T = step_heat(T, voxel_data, None, 0.0, T_amb, dt, nx, ny)
+            T = step_heat(T, voxel_data, None, 0.0, T_amb, dt, nx, ny, nz)
 
     return T
 
@@ -196,6 +196,8 @@ def visualize_slice(T, z):
     plt.title(f"Voxel Slice {z}")
     plt.colorbar(label="Temperature (°C")
     plt.show()
+
+
 
 if __name__ == "__main__":
     output = simulate_heat("voxel_bounding_boxes.json.gz")

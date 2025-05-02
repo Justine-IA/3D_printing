@@ -1,6 +1,6 @@
 from requests.auth import HTTPDigestAuth
 from maping import  RealTime2DGridMap, RealTime3DMap
-from ABB_control import fetch_layer, fetch_welding, set_pause_printing
+from ABB_control import fetch_layer, fetch_welding, set_pause_printing, fetch_pieces_being_print
 import requests
 import time
 import json
@@ -49,39 +49,6 @@ def fetch_xyz():
         print(f"An error occurred: {e}")
 
 
-# # Run the loop to continuously fetch x, y, z
-# def run_fetch_loop():
-#     deposition_points = []
-#     # map_3d = RealTime3DMap()
-#     set_pause_printing(False)
-
-#     try:
-#         while True:
-#             x, y, z = fetch_xyz()
-#             weld = fetch_welding()
-#             layer = fetch_layer()
-#             if x is not None and y is not None and weld is True:
-#                 deposition_points.append((x, y, z))
-#                 print(f"layer : {layer}")
-#                 print(f"weld : {weld}")
-#                 # map_3d.update_plot(x, y, z)
-
-
-#             time.sleep(0.001)
-#     except KeyboardInterrupt:
-#         print("Loop stopped by user.")
-#     # finally:
-#     #     map_3d.show()
-        
-
-#     with open("deposition_points_test.json", "w") as f:
-#         json.dump(deposition_points, f)
-#     print("Deposition points saved to deposition_points_test.json")
-
-#     # with open("deposition_points.json", "w") as f:
-#     #     json.dump(deposition_points, f)
-#     # print("Deposition points saved to deposition_points.json")
-
 
 # Run the loop to continuously fetch x, y, z
 def run_fetch_loop(path):
@@ -92,6 +59,7 @@ def run_fetch_loop(path):
 
     try:
         print("~~~Starting to fetch~~~")
+        pieces = fetch_pieces_being_print
         while True:
             x, y, z = fetch_xyz()
             weld = fetch_welding()

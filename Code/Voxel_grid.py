@@ -7,10 +7,25 @@ import gzip
 # ---------------------------
 # Function to map real-world coordinates to voxel indices using shift/scale
 # ---------------------------
-def point_to_voxel_indices(x, y, z, nx, ny, nz, x_min, y_min, z_min, x_range, y_range, z_range):
-    ix = int(min(((x - x_min) / x_range) * nx, nx - 1))
-    iy = int(min(((y - y_min) / y_range) * ny, ny - 1))
-    iz = int(min(((z - z_min) / z_range) * nz, nz - 1))
+def point_to_voxel_indices(x, y, z,
+                           nx, ny, nz,
+                           x_min, y_min, z_min,
+                           x_range, y_range, z_range,
+                           layer_height=None):
+    # X/Y unchanged
+    fx = (x - x_min) / x_range if x_range > 0 else 0.0
+    fy = (y - y_min) / y_range if y_range > 0 else 0.0
+    ix = int(np.clip(fx * (nx - 1), 0, nx - 1))
+    iy = int(np.clip(fy * (ny - 1), 0, ny - 1))
+
+    # Z → slice by layer_height if given, else equal‐bin
+    if layer_height is not None:
+        iz = int(np.floor((z - z_min) / layer_height))
+    else:
+        fz = (z - z_min) / z_range if z_range > 0 else 0.0
+        iz = fz * (nz - 1)
+    iz = int(np.clip(iz, 0, nz - 1))
+
     return ix, iy, iz
 
 # ---------------------------
@@ -124,74 +139,77 @@ def store_voxel_bounding_boxes(labeled_grid, voxel_dump="voxel_bounding_boxes.js
 # ---------------------------
 # Main Voxel Processing Function
 # ---------------------------
-def process_voxel(deposition_points,nz, nx, ny, fill_radius=3):
+
+def process_voxel(deposition_points, nz, nx, ny, layer_height, fill_radius=3):
     arr = np.array(deposition_points)
-    x_min, x_max_data = arr[:,0].min(), arr[:,0].max()
-    y_min, y_max_data = arr[:,1].min(), arr[:,1].max()
-    z_min, z_max_data = arr[:,2].min(), arr[:,2].max()
-    x_range = x_max_data - x_min
-    y_range = y_max_data - y_min
-    z_range = z_max_data - z_min
+    x_min, x_max = arr[:,0].min(), arr[:,0].max()
+    y_min, y_max = arr[:,1].min(), arr[:,1].max()
+    z_min, z_max = arr[:,2].min(), arr[:,2].max()
+    x_range, y_range, z_range = x_max-x_min, y_max-y_min, z_max-z_min
 
     print("Data bounds:")
-    print(f"  X: {x_min} to {x_max_data} (range={x_range})")
-    print(f"  Y: {y_min} to {y_max_data} (range={y_range})")
-    print(f"  Z: {z_min} to {z_max_data} (range={z_range})")
+    print(f"  Z: {z_min:.4f} → {z_max:.4f}  (range={z_range:.4f})")
 
     voxel_grid = np.zeros((nx, ny, nz), dtype=int)
-
-    for point in deposition_points:
-        x, y, z = point
-        ix, iy, iz = point_to_voxel_indices(x, y, z, nx, ny, nz,
-                                             x_min, y_min, z_min,
-                                             x_range, y_range, z_range)
+    for x, y, z in deposition_points:
+        ix, iy, iz = point_to_voxel_indices(
+            x, y, z, nx, ny, nz,
+            x_min, y_min, z_min,
+            x_range, y_range, z_range,
+            layer_height=layer_height
+        )
         fill_local_2d(voxel_grid, ix, iy, iz, radius=fill_radius)
+    
+    # DEBUG: which slices got any points?
+    used_slices = np.unique([
+        point_to_voxel_indices(x,y,z, nx,ny,nz,
+                               x_min,y_min,z_min,
+                               x_range,y_range,z_range, layer_height=layer_height)[2]
+        for x,y,z in deposition_points
+    ])
+    print("→ actually used z‐slices:", used_slices)
 
-    # anisotropic_struct = np.ones((3, 3, 5), dtype=int)
-    # voxel_grid = binary_closing(voxel_grid, structure=anisotropic_struct).astype(int)
-    # voxel_grid = vertical_smoothing(voxel_grid, window=3)
-    # struct_2d = np.ones((3, 3), dtype=int)
-    # for z in range(1, nz - 1):
-    #     slice_2d = voxel_grid[:, :, z]
-    #     slice_closed = binary_closing(slice_2d, structure=struct_2d)
-    #     voxel_grid[:, :, z] = slice_closed
-    # ---- corrected closing for arbitrary nz ----
-    struct2d = np.ones((3, 3), dtype=int)
-    if nz == 1:
-        # single‐slice: do a plain 2D closing on slice 0
-        voxel_grid[:, :, 0] = binary_closing(voxel_grid[:, :, 0], structure=struct2d).astype(int)
-    else:
-        # multi‐slice: 3D closing with depth capped at nz
-        depth = min(5, nz)
-        anisotropic_struct = np.ones((3, 3, depth), dtype=int)
-        voxel_grid = binary_closing(voxel_grid, structure=anisotropic_struct).astype(int)
-        # then vertical smoothing
-        voxel_grid = vertical_smoothing(voxel_grid, window=3)
-        # and a final 2D closing on each interior slice
-        for z in range(1, nz - 1):
-           voxel_grid[:, :, z] = binary_closing(voxel_grid[:, :, z], structure=struct2d)
 
-    # Optional: visualize a slice for debugging
-    slice_to_show = 0 if nz == 1 else nz - 1 
-    plt.imshow(voxel_grid[:, :, slice_to_show], cmap='gray', origin='lower', extent=[0, nx, 0, ny])
-    plt.title(f'Voxel Slice {slice_to_show}')
-    plt.show()
+        # 1) 3D labeling with a 3×3×3 connectivity
+    struct3d = np.ones((3,3,3), dtype=bool)
+    labeled_grid, initial_count = label(voxel_grid, structure=struct3d)
+    print("  → initial components:", initial_count)
 
-    structure = np.ones((3, 3, 3))
-    labeled_grid, num_features = label(voxel_grid, structure=structure)
-    print("Number of printed pieces found (before merging):", num_features)
+    # 2) merge nearby by centroid
+    labeled_grid, merged_count = merge_all_components(
+        labeled_grid,
+        distance_threshold=100
+    )
+    print("  → after centroid-merge:", merged_count)
 
-    labeled_grid, final_num_pieces = merge_all_components(labeled_grid, distance_threshold=100)
-    print("Number of printed pieces after merging by centroid:", final_num_pieces)
-
+    # 3) relabel to 1…N
     labeled_grid = relabel_components(labeled_grid)
-    unique_labels = np.unique(labeled_grid)
-    unique_labels = unique_labels[unique_labels != 0]
-    final_num_pieces = len(unique_labels)
-    print("Number of printed pieces after relabeling:", final_num_pieces)
+    final_labels = np.unique(labeled_grid)
+    final_labels = final_labels[final_labels != 0]
+    final_count = len(final_labels)
+    print("  → final pieces:", final_count)
 
-    store_voxel_bounding_boxes(labeled_grid, voxel_dump="voxel_bounding_boxes.json.gz")
-    return voxel_grid, labeled_grid, final_num_pieces
+    # 4) store per-piece bounding boxes
+    store_voxel_bounding_boxes(
+        labeled_grid,
+        voxel_dump="voxel_bounding_boxes.json.gz"
+    )
 
+
+    return voxel_grid, labeled_grid, final_count
+
+
+
+def show_slices(voxel_grid):
+    nz = voxel_grid.shape[2]
+    for z in range(nz):
+        plt.figure(figsize=(4,4))
+        plt.imshow(voxel_grid[:, :, z], 
+                   cmap='gray', 
+                   origin='lower', 
+                   interpolation='nearest')
+        plt.title(f'Slice {z}')
+        plt.axis('off')
+        plt.show()
 
 

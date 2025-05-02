@@ -7,6 +7,8 @@ url_layer = 'http://localhost/rw/rapid/symbol/data/RAPID/T_ROB1/MainModule/layer
 url_pause = 'http://localhost/rw/rapid/symbol/data/RAPID/T_ROB1/MainModule/pause_printing?json=1'
 url_weld = 'http://localhost/rw/rapid/symbol/data/RAPID/T_ROB1/MainModule/wielding?json=1'
 url_number_of_layer = 'http://localhost/rw/rapid/symbol/data/RAPID/T_ROB1/MainModule/number_of_layer?json=1'
+url_number_pieces_printed = 'http://localhost/rw/rapid/symbol/data/RAPID/T_ROB1/MainModule/which_pieces?json=1'
+
 auth = HTTPDigestAuth("Default User", "robotics")
 session = requests.Session()
 
@@ -70,6 +72,36 @@ def fetch_welding():
 def fetch_number_of_layer():
     try:
         resp = session.get(url_number_of_layer, auth=auth)
+        resp.raise_for_status()
+        data = resp.json()
+
+        state = data.get('_embedded', {}).get('_state', [])
+        # find the rap-data entry
+        for entry in state:
+            if entry.get('_type') == 'rap-data' and 'value' in entry:
+                # value is a string, e.g. "1"
+                try:
+                    return int(entry['value'])
+                except ValueError:
+                    print(f"Cannot parse layer value {entry['value']!r}, defaulting to 0")
+                    return 0
+
+        # if we never found it
+        print("⚠️ No rap-data/value entry found; defaulting to 0")
+        return 0
+
+    except requests.RequestException as e:
+        print(f"HTTP error fetching layer count: {e}")
+    except Exception as e:
+        print(f"Unexpected error in fetch_number_of_layer: {e}")
+
+    return 0
+
+
+# fetcxh which pieces it is printing
+def fetch_pieces_being_print():
+    try:
+        resp = session.get(url_number_pieces_printed, auth=auth)
         resp.raise_for_status()
         data = resp.json()
 
