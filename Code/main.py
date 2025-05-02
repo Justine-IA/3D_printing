@@ -2,7 +2,7 @@ from maping import RealTime3DMap
 from geometry_reconstruction import process_deposition_points
 from Voxel_grid import process_voxel, show_slices, store_voxel_bounding_boxes
 from heat import simulate_heat, visualize_slice, export_pixel_temperatures, run_real_time_simulation
-from fetch import run_fetch_loop
+import fetch 
 from ABB_control import fetch_number_of_layer
 from filter_outliers import filter_points_by_layer
 import json
@@ -22,12 +22,17 @@ def recreating_the_map(deposition_points):
     map_3d.show()
 
 def main():
-    # with open("deposition_points_test.json", "w") as f:
-    #     json.dump([], f)
-    # while True:
+    with open("deposition_points_test.json", "w") as f:
+        json.dump([], f)
+    while True:
+        print()
+        print("NEW LOOP")
+        print()
 
-         #fetch all the points in one layer printed
-        # run_fetch_loop(path = "deposition_points_test.json")
+
+
+        #fetch all the points in one layer printed
+        fetch.run_fetch_loop(path="deposition_points_test.json")
 
 
         with open("deposition_points_test.json", "r") as f:
@@ -42,11 +47,15 @@ def main():
 
         #show the general geometry of the shape
         # process_deposition_points(deposition_points, layer_height=1, eps=40, min_samples=5)
-
+        print()
         nz = fetch_number_of_layer()
-        nz = 3
         print(f"number of layers:{nz}")
         ny, nx = (1000,1000) if nz == 1 else (2000,2000)
+
+        current_piece  = fetch.current_piece
+        cool_time = fetch.cooling_times[current_piece]
+        print(f"Passing cool_time={cool_time:.2f}s for piece {current_piece}")
+        print()
 
         #compute the voxel representation
         voxel_grid, labeled_grid, num_features= process_voxel(deposition_points, nz, nx, ny,layer_height,  fill_radius=3)
@@ -64,6 +73,11 @@ def main():
 
 
         # export_pixel_temperatures(output, voxel_data_path="voxel_bounding_boxes.json.gz", out_csv="piece_pixel_temps.csv")
+        print()
+        print()
+        print()
+
+        
 
 
 

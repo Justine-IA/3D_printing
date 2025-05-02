@@ -135,6 +135,8 @@ def store_voxel_bounding_boxes(labeled_grid, voxel_dump="voxel_bounding_boxes.js
     with gzip.open(voxel_dump, "wt") as f:
         json.dump(bounding_data, f, indent=2)
     print(f"Per-layer bounding boxes and pixel coordinates stored (gzipped) in {voxel_dump}")
+    print()
+    print()
 
 # ---------------------------
 # Main Voxel Processing Function

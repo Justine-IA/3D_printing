@@ -5,6 +5,17 @@ import requests
 import time
 import json
 import os
+import time
+from collections import defaultdict
+
+# maps piece_id → total seconds that piece has been cooling
+cooling_times = defaultdict(float)
+
+# set of pieces we’ve ever run
+seen_pieces = set()
+
+# the piece we’re currently printing
+current_piece = None
 
 # URL for the API
 # url = 'http://localhost/rw/motionsystem/mechunits/ROB_1/robtarget?coordinate=Wobj&json=1'
@@ -50,33 +61,107 @@ def fetch_xyz():
 
 
 
-# Run the loop to continuously fetch x, y, z
+# # Run the loop to continuously fetch x, y, z
+# def run_fetch_loop(path):
+#     deposition_points = []
+#     # map_3d = RealTime3DMap()
+#     print("Start of printing:")
+#     set_pause_printing(False)
+
+#     try:
+#         print("~~~Starting to fetch~~~")
+#         pieces = fetch_pieces_being_print()
+#         while True:
+#             x, y, z = fetch_xyz()
+#             weld = fetch_welding()
+#             layer = fetch_layer()
+#             if x is not None and y is not None and weld is True:
+#                 deposition_points.append((x, y, z))
+#                 # print(f"weld : {weld}")
+#                 # map_3d.update_plot(x, y, z)
+            
+#             if layer:
+#                 print(f"layer : {layer}")
+#                 print("Layer finished! Pausing printing...")
+#                 set_pause_printing(True)
+#                 break
+
+
+#             time.sleep(0.001)
+
+#         if os.path.exists(path):
+#                 with open(path, "r") as f:
+#                     try:
+#                         all_points = json.load(f)
+#                     except json.JSONDecodeError:
+#                         all_points = []  # file is empty or broken
+#         else:
+#                 all_points = []
+
+#         # Append new points
+#         all_points.extend(deposition_points)
+
+#         # Save updated points
+#         with open(path, "w") as f:
+#             json.dump(all_points, f)
+
+#         print(f"Saved {len(deposition_points)} new points. Total points now: {len(all_points)}")
+
+#     except KeyboardInterrupt:
+#         print("Loop stopped by user.")
+
+
+
 def run_fetch_loop(path):
+    global current_piece
+
     deposition_points = []
-    # map_3d = RealTime3DMap()
-    print("Start of printing:")
+
+    # ——— 1) Un-pause the printer ———
     set_pause_printing(False)
+    print()                 # blank line for clarity
+
+    # ——— 2) Immediately read the piece ID ———
+    current_piece = fetch_pieces_being_print()
+    seen_pieces.add(current_piece)
+    print(f"→ Now printing piece {current_piece}")
+    print(f"Piece {current_piece} cooled for {cooling_times[current_piece]:.2f}s")
+    cooling_times[current_piece] = 0.0
+    print()                 # blank line
+
+    # ——— 3) Start your print timer ———
+    start = time.perf_counter()
 
     try:
-        print("~~~Starting to fetch~~~")
-        pieces = fetch_pieces_being_print
         while True:
+            # a) Fetch XYZ & weld
             x, y, z = fetch_xyz()
-            weld = fetch_welding()
-            layer = fetch_layer()
-            if x is not None and y is not None and weld is True:
+            weld    = fetch_welding()
+
+            # b) Check if the printer switched to another piece mid-layer
+            pid = fetch_pieces_being_print()
+            if pid != current_piece:
+                current_piece = pid
+                seen_pieces.add(current_piece)
+                print(f"→ Switched to printing piece {current_piece}")
+                print(f"Piece {current_piece} cooled for {cooling_times[current_piece]:.2f}s")
+                cooling_times[current_piece] = 0.0
+                print()     # blank line
+
+            # c) Collect points
+            if x is not None and y is not None and weld:
                 deposition_points.append((x, y, z))
-                # print(f"weld : {weld}")
-                # map_3d.update_plot(x, y, z)
-            
-            if layer:
-                print(f"layer : {layer}")
+
+            # d) Detect layer completion
+            if fetch_layer():
                 print("Layer finished! Pausing printing...")
                 set_pause_printing(True)
+                print()   # blank line
                 break
 
-
             time.sleep(0.001)
+
+        # … your JSON save logic …
 
         if os.path.exists(path):
                 with open(path, "r") as f:
@@ -98,5 +183,13 @@ def run_fetch_loop(path):
 
     except KeyboardInterrupt:
         print("Loop stopped by user.")
+    finally:
+        duration = time.perf_counter() - start
 
-        
+    print(f"Printed piece {current_piece} in {duration:.2f}s")
+    print()
+
+    # Accumulate cooling for everyone else
+    for pid in seen_pieces:
+        if pid != current_piece:
+            cooling_times[pid] += duration
