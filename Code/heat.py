@@ -23,7 +23,7 @@ def get_voxel_neighbors(temp_grid, z, y, x):
     ]
     return np.mean(neighbors) if neighbors else temp_grid[z, y, x]
 
-def voxel_parameters(neighbor_temp, geom, nz, time_cooling=10):
+def voxel_parameters(neighbor_temp, geom, nz, time_cooling):
     compactness = geom["compactness"]
     thickness = geom["avg_wall_thickness"]
     distance = geom["avg_distance"]
@@ -33,11 +33,11 @@ def voxel_parameters(neighbor_temp, geom, nz, time_cooling=10):
 
     alpha = (0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density)*((number_layer+2)/4)
     beta = 0.002 + 0.003 * (1 - compactness) + 0.001 * (gap / 50.0)
-    gamma = (1e-8 + 5e-8 * compactness + 1e-8 * (distance / 10.0))*((time_cooling+6)/16)
+    gamma = (1e-8 + 5e-8 * compactness + 1e-8 * (distance / 10.0))*((time_cooling)/100)
 
     return alpha, beta, gamma
 
-def simulate_heat(voxel_data_path, nz, nx, ny, T_init=20.0, T_amb=20.0, Q_val=660.0, dt=1.0, steps_per_layer=1):
+def simulate_heat(voxel_data_path, nz, nx, ny,time_cooling,  T_init=20.0, T_amb=20.0, Q_val=660.0, dt=1.0, steps_per_layer=1):
     print("Starting the simulation of the heat")
     voxel_data = load_voxel_data(voxel_data_path)
     T = np.full((nz, ny, nx), T_init, dtype=np.float64)
@@ -64,7 +64,7 @@ def simulate_heat(voxel_data_path, nz, nx, ny, T_init=20.0, T_amb=20.0, Q_val=66
                         neighbor_T = get_voxel_neighbors(T, z, y, x)
                         averaged_T = 0.6 * local_T + 0.4 * neighbor_T
 
-                        alpha, beta, gamma = voxel_parameters(neighbor_T, geometry_stats, nz)
+                        alpha, beta, gamma = voxel_parameters(neighbor_T, geometry_stats, nz, time_cooling)
 
                         T_new[z, y, x] += dt * heat_equation_ode(averaged_T, Q_val, T_amb, alpha, beta, gamma)
 

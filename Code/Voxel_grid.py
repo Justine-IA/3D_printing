@@ -172,33 +172,27 @@ def process_voxel(deposition_points, nz, nx, ny, layer_height, fill_radius=3):
     print("→ actually used z‐slices:", used_slices)
 
 
-        # 1) 3D labeling with a 3×3×3 connectivity
+
+    return voxel_grid
+
+
+def save_bounding_boxes_from_grid(voxel_grid, piece_id):
+    """
+    Given a boolean 3D grid for one piece, do one label() and
+    dump the bboxes to piece_{piece_id}_bounding_boxes.json.gz.
+    """
+
+
     struct3d = np.ones((3,3,3), dtype=bool)
-    labeled_grid, initial_count = label(voxel_grid, structure=struct3d)
-    print("  → initial components:", initial_count)
+    labeled, n = label(voxel_grid, structure=struct3d)
+    print(f"[Voxel_grid] piece {piece_id}: found {n} blob(s)")
 
-    # 2) merge nearby by centroid
-    labeled_grid, merged_count = merge_all_components(
-        labeled_grid,
-        distance_threshold=100
-    )
-    print("  → after centroid-merge:", merged_count)
-
-    # 3) relabel to 1…N
-    labeled_grid = relabel_components(labeled_grid)
-    final_labels = np.unique(labeled_grid)
-    final_labels = final_labels[final_labels != 0]
-    final_count = len(final_labels)
-    print("  → final pieces:", final_count)
-
-    # 4) store per-piece bounding boxes
-    store_voxel_bounding_boxes(
-        labeled_grid,
-        voxel_dump="voxel_bounding_boxes.json.gz"
-    )
-
-
-    return voxel_grid, labeled_grid, final_count
+    bbox_path = f"piece_{piece_id}_bounding_boxes.json.gz"
+    store_voxel_bounding_boxes(labeled, voxel_dump=bbox_path)
+    print(f"[Voxel_grid] piece {piece_id}: saved bboxes → {bbox_path}")
+    print()
+    print()
+    return labeled, bbox_path
 
 
 

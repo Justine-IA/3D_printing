@@ -6,7 +6,7 @@ from requests.auth import HTTPDigestAuth
 url_layer = 'http://localhost/rw/rapid/symbol/data/RAPID/T_ROB1/MainModule/layer_finished?json=1'
 url_pause = 'http://localhost/rw/rapid/symbol/data/RAPID/T_ROB1/MainModule/pause_printing?json=1'
 url_weld = 'http://localhost/rw/rapid/symbol/data/RAPID/T_ROB1/MainModule/wielding?json=1'
-url_number_of_layer = 'http://localhost/rw/rapid/symbol/data/RAPID/T_ROB1/MainModule/number_of_layer?json=1'
+url_number_of_layer = 'http://localhost/rw/rapid/symbol/data/RAPID/T_ROB1/MainModule/number_of_layer_piece_{}?json=1'
 url_number_pieces_printed = 'http://localhost/rw/rapid/symbol/data/RAPID/T_ROB1/MainModule/which_pieces?json=1'
 
 auth = HTTPDigestAuth("Default User", "robotics")
@@ -69,9 +69,9 @@ def fetch_welding():
     except Exception as e:
         print(f"An error occurred: {e}")
 
-def fetch_number_of_layer():
+def fetch_number_of_layer(url):
     try:
-        resp = session.get(url_number_of_layer, auth=auth)
+        resp = session.get(url, auth=auth)
         resp.raise_for_status()
         data = resp.json()
 
@@ -98,7 +98,7 @@ def fetch_number_of_layer():
     return 0
 
 
-# fetcxh which pieces it is printing
+# fetch which pieces it is printing
 def fetch_pieces_being_print():
     try:
         resp = session.get(url_number_pieces_printed, auth=auth)
@@ -150,4 +150,36 @@ def set_pause_printing(value: bool):
             print(response.text)
     except Exception as e:
         print(f"Error setting pause_printing: {e}")
+
+
+
+# --- Tell ABB which piece to print next ---
+def set_piece_choice(choice: int):
+    """
+    choice: the next piece index (e.g. 1, 2, 3, 4)
+    """
+    # note: match your Rapid module path here exactly
+    url = (
+        "http://localhost/rw/rapid/symbol/data/"
+        "RAPID/T_ROB1/MainModule/piece_choice?action=set"
+    )
+
+    # for a NUM symbol you just send the numeric value as a string
+    payload = {"value": str(choice)}
+
+    try:
+        response = session.post(
+            url,
+            auth=auth,
+            data=payload,
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        if response.status_code == 204:
+            print(f"piece_choice set to {choice}")
+        else:
+            print(f"Failed to set piece_choice: {response.status_code}")
+            print(response.text)
+    except Exception as e:
+        print(f"Error setting piece_choice: {e}")
+
 

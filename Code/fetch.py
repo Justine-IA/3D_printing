@@ -14,6 +14,7 @@ cooling_times = defaultdict(float)
 # set of pieces we’ve ever run
 seen_pieces = set()
 
+
 # the piece we’re currently printing
 current_piece = None
 
@@ -61,56 +62,7 @@ def fetch_xyz():
 
 
 
-# # Run the loop to continuously fetch x, y, z
-# def run_fetch_loop(path):
-#     deposition_points = []
-#     # map_3d = RealTime3DMap()
-#     print("Start of printing:")
-#     set_pause_printing(False)
-
-#     try:
-#         print("~~~Starting to fetch~~~")
-#         pieces = fetch_pieces_being_print()
-#         while True:
-#             x, y, z = fetch_xyz()
-#             weld = fetch_welding()
-#             layer = fetch_layer()
-#             if x is not None and y is not None and weld is True:
-#                 deposition_points.append((x, y, z))
-#                 # print(f"weld : {weld}")
-#                 # map_3d.update_plot(x, y, z)
-            
-#             if layer:
-#                 print(f"layer : {layer}")
-#                 print("Layer finished! Pausing printing...")
-#                 set_pause_printing(True)
-#                 break
-
-
-#             time.sleep(0.001)
-
-#         if os.path.exists(path):
-#                 with open(path, "r") as f:
-#                     try:
-#                         all_points = json.load(f)
-#                     except json.JSONDecodeError:
-#                         all_points = []  # file is empty or broken
-#         else:
-#                 all_points = []
-
-#         # Append new points
-#         all_points.extend(deposition_points)
-
-#         # Save updated points
-#         with open(path, "w") as f:
-#             json.dump(all_points, f)
-
-#         print(f"Saved {len(deposition_points)} new points. Total points now: {len(all_points)}")
-
-#     except KeyboardInterrupt:
-#         print("Loop stopped by user.")
-
-
+# Run the loop to continuously fetch x, y, z
 
 def run_fetch_loop(path):
     global current_piece
