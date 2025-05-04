@@ -2,8 +2,9 @@ from maping import RealTime3DMap
 from Voxel_grid import process_voxel, show_slices, store_voxel_bounding_boxes, save_bounding_boxes_from_grid
 from heat import simulate_heat, visualize_slice, export_pixel_temperatures, run_real_time_simulation
 import fetch 
-from ABB_control import fetch_number_of_layer, set_piece_choice
+from ABB_control import fetch_number_of_layer, set_piece_choice, set_pause_printing
 from filter_outliers import filter_points_by_layer
+from calculate_cooling_time import start_print, end_print, get_cooling_time
 
 import json, os
 import time
@@ -37,8 +38,13 @@ def main():
             piece_id = fetch.fetch_pieces_being_print()
             path = f"deposition_points_piece_{piece_id}.json"
 
+            idle = start_print(piece_id)
+            print(f"→ Piece {piece_id} cooled for {idle:.2f}s since last print")
+
             #fetch all the points in one layer printed
             fetch.run_fetch_loop(path=path)
+
+            end_print(piece_id)
 
             deposition_points = json.load(open(path))
 
@@ -62,13 +68,12 @@ def main():
             ny, nx = (500,500) 
 
             current_piece  = fetch.current_piece
-            cool_time = fetch.cooling_times[current_piece]
-            print(f"Passing cool_time={cool_time:.2f}s for piece {current_piece}")
+            cool_time = get_cooling_time(piece_id)
+            print(f"Passing cool_time={cool_time:.2f}s for piece {piece_id}")
             print()
 
             #compute the voxel representation
             voxel_grid= process_voxel(deposition_points, nz, nx, ny,layer_height,  fill_radius=3)
-            # print("Voxel processing complete. Number of components:", num_features)
             show_slices(voxel_grid)
 
             _, bbox_path = save_bounding_boxes_from_grid(voxel_grid, current_piece)
@@ -76,11 +81,11 @@ def main():
             #compute the heat propagation inside all pieces 
             output = simulate_heat(bbox_path, nz, nx, ny,cool_time, steps_per_layer=1)
 
-            # output = run_real_time_simulation(voxel_data_path=bbox_path,nz=nz,  nx=nx,  ny=ny,dt=0.1,print_time=6.0,
-            #      cool_time=10.0, Q_val=660.0,T_init=20.0,T_amb=20.0)
-
             for i in range(nz):
                 visualize_slice(output, i)
+
+            cool_time_for_piece_2 = get_cooling_time(2)
+            print(f"cool time for piece 2: {cool_time_for_piece_2}")
 
 
             print("-----------END LOOP-----------")            
@@ -93,13 +98,20 @@ def main():
             print()
             choice = int(input("Enter the piece number you want to print (1–4): "))
             set_piece_choice(choice)
-
+            if choice == 0:
+                set_pause_printing(False)
+                break
             time.sleep(1)
             piece_id = choice
             path = f"deposition_points_piece_{piece_id}.json"
 
+            idle = start_print(piece_id)
+            print(f"→ Piece {piece_id} cooled for {idle:.2f}s since last print")
+
             #fetch all the points in one layer printed
             fetch.run_fetch_loop(path=path)
+
+            end_print(piece_id)
 
             deposition_points = json.load(open(path))
 
@@ -123,7 +135,7 @@ def main():
             ny, nx = (500,500) 
 
             current_piece  = fetch.current_piece
-            cool_time = fetch.cooling_times[current_piece]
+            cool_time = get_cooling_time(piece_id)
             print(f"Passing cool_time={cool_time:.2f}s for piece {current_piece}")
             print()
 
@@ -137,11 +149,11 @@ def main():
             #compute the heat propagation inside all pieces 
             output = simulate_heat(bbox_path, nz, nx, ny,cool_time, steps_per_layer=1)
 
-            # output = run_real_time_simulation(voxel_data_path=bbox_path,nz=nz,  nx=nx,  ny=ny,dt=0.1,print_time=6.0,
-            #      cool_time=10.0, Q_val=660.0,T_init=20.0,T_amb=20.0)
-
             for i in range(nz):
                 visualize_slice(output, i)
+            
+            cool_time_for_piece_2 = get_cooling_time(2)
+            print(f"cool time for piece 2: {cool_time_for_piece_2}")
 
 
             # export_pixel_temperatures(output, voxel_data_path=bbox_path, out_csv="piece_pixel_temps.csv")
@@ -155,6 +167,7 @@ def main():
 
 
     except KeyboardInterrupt:
+        set_pause_printing(False)
         print("🏁 All done — exiting.")
         
 

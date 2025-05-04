@@ -33,7 +33,7 @@ def voxel_parameters(neighbor_temp, geom, nz, time_cooling):
 
     alpha = (0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density)*((number_layer+2)/4)
     beta = 0.002 + 0.003 * (1 - compactness) + 0.001 * (gap / 50.0)
-    gamma = (1e-8 + 5e-8 * compactness + 1e-8 * (distance / 10.0))*((time_cooling)/100)
+    gamma = (1e-8 + 5e-8 * compactness + 1e-8 * (distance / 10.0))*((time_cooling)+1/100)
 
     return alpha, beta, gamma
 
@@ -56,7 +56,7 @@ def simulate_heat(voxel_data_path, nz, nx, ny,time_cooling,  T_init=20.0, T_amb=
 
                 geometry_stats = analyze_geometry(active_pixels, bbox_dims)
 
-                for rel_y, rel_x in active_pixels:
+                for rel_x, rel_y  in active_pixels:
                     y = bbox_min[1] + rel_y
                     x = bbox_min[0] + rel_x
                     if 0 <= x < nx and 0 <= y < ny:
@@ -66,7 +66,7 @@ def simulate_heat(voxel_data_path, nz, nx, ny,time_cooling,  T_init=20.0, T_amb=
 
                         alpha, beta, gamma = voxel_parameters(neighbor_T, geometry_stats, nz, time_cooling)
 
-                        T_new[z, y, x] += dt * heat_equation_ode(averaged_T, Q_val, T_amb, alpha, beta, gamma)
+                        T_new[z, x, y] += dt * heat_equation_ode(averaged_T, Q_val, T_amb, alpha, beta, gamma)
 
             T = T_new
 
@@ -192,10 +192,17 @@ def export_pixel_temperatures(T, voxel_data_path, out_csv="piece_pixel_temps.csv
 
 def visualize_slice(T, z):
     plt.figure(figsize=(6, 6))
-    plt.imshow(T[z], cmap="hot")
-    plt.title(f"Voxel Slice {z}")
-    plt.colorbar(label="Temperature (°C")
+    plt.imshow(
+        T[z],
+        cmap="hot",
+        origin="lower",      # so (0,0) is bottom-left
+        interpolation="none",# no smoothing between pixels
+        aspect="equal"       # square pixels
+    )
+    plt.title(f"Temperature, layer {z}")
+    plt.colorbar(label="°C")
     plt.show()
+
 
 
 

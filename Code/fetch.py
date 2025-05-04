@@ -1,5 +1,4 @@
 from requests.auth import HTTPDigestAuth
-from maping import  RealTime2DGridMap, RealTime3DMap
 from ABB_control import fetch_layer, fetch_welding, set_pause_printing, fetch_pieces_being_print
 import requests
 import time
@@ -7,16 +6,6 @@ import json
 import os
 import time
 from collections import defaultdict
-
-# maps piece_id → total seconds that piece has been cooling
-cooling_times = defaultdict(float)
-
-# set of pieces we’ve ever run
-seen_pieces = set()
-
-
-# the piece we’re currently printing
-current_piece = None
 
 # URL for the API
 # url = 'http://localhost/rw/motionsystem/mechunits/ROB_1/robtarget?coordinate=Wobj&json=1'
@@ -71,15 +60,12 @@ def run_fetch_loop(path):
 
     # ——— 1) Un-pause the printer ———
     set_pause_printing(False)
-    print()                 # blank line for clarity
+    print()             
 
     # ——— 2) Immediately read the piece ID ———
     current_piece = fetch_pieces_being_print()
-    seen_pieces.add(current_piece)
     print(f"→ Now printing piece {current_piece}")
-    print(f"Piece {current_piece} cooled for {cooling_times[current_piece]:.2f}s")
-    cooling_times[current_piece] = 0.0
-    print()                 # blank line
+    print()  # blank line
 
     # ——— 3) Start your print timer ———
     start = time.perf_counter()
@@ -94,10 +80,7 @@ def run_fetch_loop(path):
             pid = fetch_pieces_being_print()
             if pid != current_piece:
                 current_piece = pid
-                seen_pieces.add(current_piece)
                 print(f"→ Switched to printing piece {current_piece}")
-                print(f"Piece {current_piece} cooled for {cooling_times[current_piece]:.2f}s")
-                cooling_times[current_piece] = 0.0
                 print()     # blank line
 
             # c) Collect points
@@ -141,7 +124,4 @@ def run_fetch_loop(path):
     print(f"Printed piece {current_piece} in {duration:.2f}s")
     print()
 
-    # Accumulate cooling for everyone else
-    for pid in seen_pieces:
-        if pid != current_piece:
-            cooling_times[pid] += duration
+
