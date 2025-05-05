@@ -123,5 +123,3 @@ def run_fetch_loop(path):
 
     print(f"Printed piece {current_piece} in {duration:.2f}s")
     print()
-
-

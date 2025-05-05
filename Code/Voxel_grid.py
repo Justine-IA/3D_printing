@@ -207,5 +207,3 @@ def show_slices(voxel_grid):
         plt.title(f'Slice {z}')
         plt.axis('off')
         plt.show()
-
-

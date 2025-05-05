@@ -92,4 +92,3 @@ def process_deposition_points(deposition_points, layer_height=1, eps=40, min_sam
                   f"Length ~ {geom['length']:.2f}, Width ~ {geom['width']:.2f}, Diagonal ~ {geom['diagonal']:.2f}, Height ~ {height:.2f}")
     
     return layer_geometries
-    

@@ -181,5 +181,3 @@ def set_piece_choice(choice: int):
             print(response.text)
     except Exception as e:
         print(f"Error setting piece_choice: {e}")
-
-
