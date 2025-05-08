@@ -14,6 +14,7 @@ def load_voxel_data(gz_file):
 def heat_equation_ode(T, Q, T_amb, alpha, beta, gamma):
     return alpha * Q - beta * (T - T_amb) - gamma * (T**4 - T_amb)
 
+
 def get_voxel_neighbors(temp_grid, z, y, x):
     offsets = [(dz, dy, dx) for dz in [0] for dy in [-1, 0, 1] for dx in [-1, 0, 1] if not (dy == 0 and dx == 0)]
     neighbors = [
@@ -32,8 +33,8 @@ def voxel_parameters(neighbor_temp, geom, nz, time_cooling):
     number_layer = nz
 
     alpha = (0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density)*((number_layer+2)/4)
-    beta = 0.002 + 0.003 * (1 - compactness) + 0.001 * (gap / 50.0)
-    gamma = (1e-8 + 5e-8 * compactness + 1e-8 * (distance / 10.0))*((time_cooling)+1/100)
+    beta = (0.02 + 0.03 * (1 - compactness) + 0.01 * (gap / 50.0))*((time_cooling)+1/10)
+    gamma = (1e-6 + 5e-6 * compactness + 1e-6 * (distance / 10.0))*((time_cooling)+1/20)
 
     return alpha, beta, gamma
 

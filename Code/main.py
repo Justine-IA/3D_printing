@@ -105,6 +105,7 @@ def main():
             print("-----------NEW LOOP-----------")
             print()
             to_remove = []
+            number_of_layers_to_print = 4
             for piece_id in piece_ids.copy():  # Use copy to avoid modification during iteration
                 url = (
                     f"http://localhost/rw/rapid/symbol/data/"
@@ -115,9 +116,9 @@ def main():
                     nz = fetch_number_of_layer(url)
                     print(f"Piece {piece_id} has {nz} layers")
                     
-                    if nz >= 6:
+                    if nz >= number_of_layers_to_print:
                         to_remove.append(piece_id)
-                        print(f"Piece {piece_id} has reached 6 layers - removing from queue")
+                        print(f"Piece {piece_id} has reached {number_of_layers_to_print} layers - removing from queue")
                 except Exception as e:
                     print(f"Error checking layers for piece {piece_id}: {e}")
                     continue
@@ -134,10 +135,14 @@ def main():
     
             
             possible = False
-            temp_max_require = 250
+            temp_max_require = 200
             while possible == False: 
+                for pid, info in stats.items():
+                    avg_temp = info["avg_temp"]
+                    print(f"Piece {pid}: average temp = {avg_temp:.2f} °C")
                 stats  = save_heat_stats(piece_ids, nx, ny)
                 choice = min(stats.keys(), key=lambda pid: stats[pid]["avg_temp"])
+                print(f"piece selected: {choice}")
                 cool_time = get_cooling_time(choice)
                 print(f"pieces cool time : {cool_time}")
                 avg_temp_of_choice = stats[choice]["avg_temp"]
