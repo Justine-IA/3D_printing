@@ -21,9 +21,6 @@ voxel_grid= process_voxel(deposition_points, nz, nx, ny,layer_height,  fill_radi
 # show_slices(voxel_grid)
 bbox_path = "piece_1_bounding_boxes.json.gz"
 
-
-
-
 piece_ids  = [0, 1, 2, 3]
 
 def save_stats(piece_ids):

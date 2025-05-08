@@ -38,7 +38,7 @@ def voxel_parameters(neighbor_temp, geom, nz, time_cooling):
     return alpha, beta, gamma
 
 def simulate_heat(voxel_data_path, nz, nx, ny,time_cooling,  T_init=20.0, T_amb=20.0, Q_val=660.0, dt=1.0, steps_per_layer=1):
-    print("Starting the simulation of the heat")
+
     voxel_data = load_voxel_data(voxel_data_path)
     T = np.full((nz, ny, nx), T_init, dtype=np.float64)
 
@@ -117,6 +117,7 @@ def load_piece_bbox(piece_id, path_template="piece_{id}_bounding_boxes.json.gz")
     fname = path_template.format(id=piece_id)
     with gzip.open(fname, "rt") as f:
         return json.load(f)
+    
 def compute_piece_avg_temp(output, piece_bbox, mask_heatmap=False):
     """
     output: 3D array shape (nz, ny, nx)

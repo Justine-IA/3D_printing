@@ -5,7 +5,8 @@ import fetch
 from ABB_control import fetch_number_of_layer, set_piece_choice, set_pause_printing
 from filter_outliers import filter_points_by_layer
 from calculate_cooling_time import start_print, end_print, get_cooling_time
-from policy import choose_safe_piece, choose_next_piece
+from save_heat_stats import save_heat_stats, display_stats
+
 import json, os
 import time
 from scipy.ndimage import label
@@ -76,11 +77,12 @@ def main():
 
             #compute the voxel representation
             voxel_grid= process_voxel(deposition_points, nz, nx, ny,layer_height,  fill_radius=3)
-            # show_slices(voxel_grid)
+            show_slices(voxel_grid)
 
             _, bbox_path = save_bounding_boxes_from_grid(voxel_grid, current_piece)
 
             #compute the heat propagation inside all pieces 
+            print("Starting the simulation of the heat")
             output = simulate_heat(bbox_path, nz, nx, ny,cool_time, steps_per_layer=1)
 
             for i in range(nz):
@@ -90,80 +92,66 @@ def main():
             print()
             print()
 
-        stats      = {}
+        print("Finished manual printing and visualization.")
+        input()  
 
-        for i in piece_ids:
-            bbox_path = f"piece_{i}_bounding_boxes.json.gz"
-            cool_time = cool_time = get_cooling_time(i)
-            url_number_of_layers = (
-                        f"http://localhost/rw/rapid/symbol/data/"
-                        f"RAPID/T_ROB1/MainModule/"
-                        f"number_of_layer_piece_{i}?json=1"
-                    )
 
-            nz = fetch_number_of_layer(url_number_of_layers)
-            output = simulate_heat(bbox_path, nz, nx, ny,cool_time, steps_per_layer=1)
+        piece_ids = [1, 2, 3, 4]
 
-            # 3) Load only this piece’s bounding‐box data
-            piece_bbox = load_piece_bbox(i)
-
-            # 4) Compute avg temperature & masked heatmap
-            avg_temp, heatmap = compute_piece_avg_temp(
-                output,
-                piece_bbox,
-                mask_heatmap=True
-            )
-
-            # 5) Save the mask-filtered heatmap, record stats
-            heatmap_file = f"piece_{i}_heatmap.npy"
-            np.save(heatmap_file, heatmap)
-
-            stats[i] = {
-                "avg_temp":     avg_temp,
-                "cool_time":    cool_time,
-                "heatmap_file": heatmap_file,
-                "nz":           nz,
-                "nx":           nx,
-                "ny":           ny,
-            }
-
-        for pid, info in stats.items():
-            # 2) Access average temperature:
-            avg_temp = info["avg_temp"]
-            print(f"Piece {pid}: average temp = {avg_temp:.2f} °C")
-
-            # 3) Load the masked heatmap array:
-            heatmap = np.load(info["heatmap_file"])  # shape (nz, ny, nx)
-
-            # 4) (Optional) visualize layer 0 of this piece:
-            visualize_slice(heatmap, z=0)
-
-        # AI FOR FIRST CHOICE THEN ENTER THE LOOP
-
+        stats = save_heat_stats(piece_ids, nx, ny)
+        display_stats(stats)
         while True:
+            
             print("-----------NEW LOOP-----------")
             print()
-            # BLABLA BLA CALL AI THEN DECISION USING:
-            #while possible = false
-            #   choice = AI DECISION
-            #   if avg_temp(choice) < temp_max_require
-            #       possible = true
-            #   else 
-            #       time.sleep(10)
-            #   set_piece_choice(choice)
-            choice = int(input("Enter the piece number you want to print (1-4): "))
-
-            # choice = choose_safe_piece(stats, model=None)  
-            # set_piece_choice(choice)
-            # print(f"→ Printing piece {choice}")
-
-            set_piece_choice(choice)
-
-            if choice == 0:
-                set_pause_printing(False)
+            to_remove = []
+            for piece_id in piece_ids.copy():  # Use copy to avoid modification during iteration
+                url = (
+                    f"http://localhost/rw/rapid/symbol/data/"
+                    f"RAPID/T_ROB1/MainModule/"
+                    f"number_of_layer_piece_{piece_id}?json=1"
+                )
+                try:
+                    nz = fetch_number_of_layer(url)
+                    print(f"Piece {piece_id} has {nz} layers")
+                    
+                    if nz >= 6:
+                        to_remove.append(piece_id)
+                        print(f"Piece {piece_id} has reached 6 layers - removing from queue")
+                except Exception as e:
+                    print(f"Error checking layers for piece {piece_id}: {e}")
+                    continue
+            
+            # Remove completed pieces
+            for piece_id in to_remove:
+                if piece_id in piece_ids:
+                    piece_ids.remove(piece_id)
+            
+            # Exit condition - all pieces completed
+            if not piece_ids:
+                print("All pieces have reached 6 layers. Printing complete!")
                 break
+    
+            
+            possible = False
+            temp_max_require = 250
+            while possible == False: 
+                stats  = save_heat_stats(piece_ids, nx, ny)
+                choice = min(stats.keys(), key=lambda pid: stats[pid]["avg_temp"])
+                cool_time = get_cooling_time(choice)
+                print(f"pieces cool time : {cool_time}")
+                avg_temp_of_choice = stats[choice]["avg_temp"]
+                print(f"pieces temperature {avg_temp_of_choice}")
+                if avg_temp_of_choice < temp_max_require:
+                    possible = True
+                else :
+                    time.sleep(10)
+              
+            set_piece_choice(choice)
+            # choice = int(input("Enter the piece number you want to print (1-4): "))
 
-            time.sleep(1)
+            print(f"[auto] → Printing piece {choice}")
+
             piece_id = choice
             path = f"deposition_points_piece_{piece_id}.json"
 
@@ -194,7 +182,7 @@ def main():
 
             nz = fetch_number_of_layer(url_number_of_layers)
             print(f"number of layers:{nz}")
-            ny, nx = (500,500) 
+            ny, nx = (400,400) 
 
             current_piece  = fetch.current_piece
             cool_time = get_cooling_time(piece_id)
@@ -208,17 +196,11 @@ def main():
             _, bbox_path = save_bounding_boxes_from_grid(voxel_grid, current_piece)
 
             #compute the heat propagation inside all pieces 
+            print("Starting the simulation of the heat")
             output = simulate_heat(bbox_path, nz, nx, ny,cool_time, steps_per_layer=1)
 
             for i in range(nz):
                 visualize_slice(output, i)
-            
-
-
-            # export_pixel_temperatures(output, voxel_data_path=bbox_path, out_csv="piece_pixel_temps.csv")
-
-
-
 
             print("-----------END LOOP-----------")            
             print()
@@ -226,6 +208,7 @@ def main():
 
 
     except KeyboardInterrupt:
+        set_piece_choice(0)
         set_pause_printing(False)
         print("🏁 All done — exiting.")
         
