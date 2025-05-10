@@ -4,6 +4,7 @@ from heat      import simulate_heat, load_piece_bbox, compute_piece_avg_temp, vi
 from ABB_control import fetch_number_of_layer
 from calculate_cooling_time import get_cooling_time
 import json
+import time
 # grid size & which pieces to process
 piece_ids = [1,2,3,4]
 nx, ny    = 400, 400

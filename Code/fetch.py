@@ -96,7 +96,6 @@ def run_fetch_loop(path):
 
             time.sleep(0.001)
 
-        # … your JSON save logic …
 
         if os.path.exists(path):
                 with open(path, "r") as f:

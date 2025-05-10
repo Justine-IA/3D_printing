@@ -72,7 +72,7 @@ def main():
 
             current_piece  = fetch.current_piece
             cool_time = get_cooling_time(piece_id)
-            print(f"Passing cool_time={cool_time:.2f}s for piece {piece_id}")
+            # print(f"Passing cool_time={cool_time:.2f}s for piece {piece_id}")
             print()
 
             #compute the voxel representation
@@ -97,6 +97,7 @@ def main():
 
 
         piece_ids = [1, 2, 3, 4]
+        number_of_layers_to_print = 4
 
         stats = save_heat_stats(piece_ids, nx, ny)
         display_stats(stats)
@@ -105,7 +106,6 @@ def main():
             print("-----------NEW LOOP-----------")
             print()
             to_remove = []
-            number_of_layers_to_print = 4
             for piece_id in piece_ids.copy():  # Use copy to avoid modification during iteration
                 url = (
                     f"http://localhost/rw/rapid/symbol/data/"
@@ -140,20 +140,23 @@ def main():
                 for pid, info in stats.items():
                     avg_temp = info["avg_temp"]
                     print(f"Piece {pid}: average temp = {avg_temp:.2f} °C")
+
                 stats  = save_heat_stats(piece_ids, nx, ny)
                 choice = min(stats.keys(), key=lambda pid: stats[pid]["avg_temp"])
+
                 print(f"piece selected: {choice}")
                 cool_time = get_cooling_time(choice)
-                print(f"pieces cool time : {cool_time}")
+                print(f"pieces cool time: {cool_time}")
                 avg_temp_of_choice = stats[choice]["avg_temp"]
-                print(f"pieces temperature {avg_temp_of_choice}")
+                print(f"pieces temperature: {avg_temp_of_choice}")
+
                 if avg_temp_of_choice < temp_max_require:
                     possible = True
                 else :
                     time.sleep(10)
               
-            set_piece_choice(choice)
             # choice = int(input("Enter the piece number you want to print (1-4): "))
+            set_piece_choice(choice)
 
             print(f"[auto] → Printing piece {choice}")
 

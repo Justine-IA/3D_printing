@@ -43,71 +43,71 @@ def fill_local_2d(voxel_grid, ix, iy, iz, radius=1):
 # ---------------------------
 # Vertical Smoothing Function
 # ---------------------------
-def vertical_smoothing(voxel_grid, window=3):
-    Nz = voxel_grid.shape[2]
-    smoothed = np.copy(voxel_grid)
-    for z in range(Nz):
-        if z < window:
-            window_slices = voxel_grid[:, :, 0:window]
-        elif z >= Nz - window:
-            window_slices = voxel_grid[:, :, Nz - window:Nz]
-        else:
-            offset = window // 2
-            window_slices = voxel_grid[:, :, z - offset : z + offset + 1]
-        threshold = window_slices.shape[2] // 2
-        local_sum = np.sum(window_slices, axis=2)
-        smoothed[:, :, z] = (local_sum >= threshold).astype(int)
-    return smoothed
+# def vertical_smoothing(voxel_grid, window=3):
+#     Nz = voxel_grid.shape[2]
+#     smoothed = np.copy(voxel_grid)
+#     for z in range(Nz):
+#         if z < window:
+#             window_slices = voxel_grid[:, :, 0:window]
+#         elif z >= Nz - window:
+#             window_slices = voxel_grid[:, :, Nz - window:Nz]
+#         else:
+#             offset = window // 2
+#             window_slices = voxel_grid[:, :, z - offset : z + offset + 1]
+#         threshold = window_slices.shape[2] // 2
+#         local_sum = np.sum(window_slices, axis=2)
+#         smoothed[:, :, z] = (local_sum >= threshold).astype(int)
+#     return smoothed
 
 # ---------------------------
 # Component Labeling and Merging
 # ---------------------------
-def compute_centroid(labeled_grid, label_val):
-    indices = np.argwhere(labeled_grid == label_val)
-    if indices.size == 0:
-        return None
-    return np.mean(indices, axis=0)
+# def compute_centroid(labeled_grid, label_val):
+#     indices = np.argwhere(labeled_grid == label_val)
+#     if indices.size == 0:
+#         return None
+#     return np.mean(indices, axis=0)
 
-def merge_components_by_centroid(labeled_grid, distance_threshold):
-    unique_labels = np.unique(labeled_grid)
-    unique_labels = unique_labels[unique_labels != 0]
-    merged = False
-    for i in range(len(unique_labels)):
-        for j in range(i + 1, len(unique_labels)):
-            label_i = unique_labels[i]
-            label_j = unique_labels[j]
-            centroid_i = compute_centroid(labeled_grid, label_i)
-            centroid_j = compute_centroid(labeled_grid, label_j)
-            if centroid_i is None or centroid_j is None:
-                continue
-            distance = np.linalg.norm(centroid_i - centroid_j)
-            if distance < distance_threshold:
-                labeled_grid[labeled_grid == label_j] = label_i
-                merged = True
-    return labeled_grid, merged
+# def merge_components_by_centroid(labeled_grid, distance_threshold):
+#     unique_labels = np.unique(labeled_grid)
+#     unique_labels = unique_labels[unique_labels != 0]
+#     merged = False
+#     for i in range(len(unique_labels)):
+#         for j in range(i + 1, len(unique_labels)):
+#             label_i = unique_labels[i]
+#             label_j = unique_labels[j]
+#             centroid_i = compute_centroid(labeled_grid, label_i)
+#             centroid_j = compute_centroid(labeled_grid, label_j)
+#             if centroid_i is None or centroid_j is None:
+#                 continue
+#             distance = np.linalg.norm(centroid_i - centroid_j)
+#             if distance < distance_threshold:
+#                 labeled_grid[labeled_grid == label_j] = label_i
+#                 merged = True
+#     return labeled_grid, merged
 
-def merge_all_components(labeled_grid, distance_threshold=50):
-    merged = True
-    while merged:
-        labeled_grid, merged = merge_components_by_centroid(labeled_grid, distance_threshold)
-    unique_labels = np.unique(labeled_grid)
-    unique_labels = unique_labels[unique_labels != 0]
-    return labeled_grid, len(unique_labels)
+# def merge_all_components(labeled_grid, distance_threshold=50):
+#     merged = True
+#     while merged:
+#         labeled_grid, merged = merge_components_by_centroid(labeled_grid, distance_threshold)
+#     unique_labels = np.unique(labeled_grid)
+#     unique_labels = unique_labels[unique_labels != 0]
+#     return labeled_grid, len(unique_labels)
 
-def relabel_components(labeled_grid):
-    new_grid = np.copy(labeled_grid)
-    unique_labels = np.unique(labeled_grid)
-    mapping = {}
-    new_label = 1
-    for label_val in np.sort(unique_labels):
-        if label_val == 0:
-            mapping[label_val] = 0
-        else:
-            mapping[label_val] = new_label
-            new_label += 1
-    for old_val, new_val in mapping.items():
-        new_grid[labeled_grid == old_val] = new_val
-    return new_grid
+# def relabel_components(labeled_grid):
+#     new_grid = np.copy(labeled_grid)
+#     unique_labels = np.unique(labeled_grid)
+#     mapping = {}
+#     new_label = 1
+#     for label_val in np.sort(unique_labels):
+#         if label_val == 0:
+#             mapping[label_val] = 0
+#         else:
+#             mapping[label_val] = new_label
+#             new_label += 1
+#     for old_val, new_val in mapping.items():
+#         new_grid[labeled_grid == old_val] = new_val
+#     return new_grid
 
 # ---------------------------
 # Store Bounding Boxes + Pixel Coordinates (no geometry analysis)
