@@ -32,9 +32,9 @@ def voxel_parameters(neighbor_temp, geom, nz, time_cooling):
     gap = geom["max_internal_gap"]
     number_layer = nz
 
-    alpha = (0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density)*((number_layer+2)/4)
-    beta = (0.02 + 0.03 * (1 - compactness) + 0.01 * (gap / 50.0))*((time_cooling)+1/10)
-    gamma = (1e-6 + 5e-6 * compactness + 1e-6 * (distance / 10.0))*((time_cooling)+1/20)
+    alpha = (0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density)*((number_layer+4)/6)
+    beta = (0.02 + 0.03 * (1 - compactness) + 0.01 * (gap / 50.0))*(((time_cooling)+1/100)**1.5)
+    gamma = (1e-6 + 5e-6 * compactness + 1e-6 * (distance / 10.0))*(((time_cooling)+1/120)**1.2)
 
     return alpha, beta, gamma
 

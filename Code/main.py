@@ -6,12 +6,16 @@ from ABB_control import fetch_number_of_layer, set_piece_choice, set_pause_print
 from filter_outliers import filter_points_by_layer
 from calculate_cooling_time import start_print, end_print, get_cooling_time
 from save_heat_stats import save_heat_stats, display_stats
+from q_agent import QAgent
 
 import json, os
 import time
 from scipy.ndimage import label
 import numpy as np 
 from glob import glob
+import matplotlib.pyplot as plt
+
+
 
 def recreating_the_map(deposition_points):
     # Initialize the RealTime3DMap
@@ -28,6 +32,16 @@ def recreating_the_map(deposition_points):
 
 def main():
     piece_ids  = [1, 2, 3, 4]
+    agent = QAgent()
+    reward_history = []
+
+    start_time = time.time()
+    # Charger la table Q si elle existe
+    if os.path.exists("q_table.pkl"):
+        print("🧠 Loading existing Q-table...")
+        agent.load("q_table.pkl")
+    else:
+        print("🧠 Starting with new Q-table.")
 
     for i in piece_ids:
             path_to_clean = f"deposition_points_piece_{i}.json"
@@ -97,7 +111,12 @@ def main():
 
 
         piece_ids = [1, 2, 3, 4]
-        number_of_layers_to_print = 4
+        number_of_layers_to_print = 10
+
+        episode_reward = 0
+        prev_state = None
+        prev_action = None
+
 
         stats = save_heat_stats(piece_ids, nx, ny)
         display_stats(stats)
@@ -131,32 +150,87 @@ def main():
             # Exit condition - all pieces completed
             if not piece_ids:
                 print("All pieces have reached 6 layers. Printing complete!")
+                set_piece_choice(0)
+                set_pause_printing(False)
+                stats = save_heat_stats(piece_ids, nx, ny)
+                display_stats(stats)
+                print("💾 Saving Q-table...")
+                print()
+                agent.save("q_table.pkl")
+                plt.figure(figsize=(10, 4))
+                plt.plot(reward_history, label="Total reward per episode")
+                plt.xlabel("episode")
+                plt.ylabel("Reward total")
+                plt.title("evolutin of AI performance")
+                plt.legend()
+                plt.grid()
+                plt.tight_layout()
+                plt.savefig("reward_progress.png")  # sauvegarde image
+                plt.show()
+                with open("reward_history.csv", "w") as f:
+                    f.write("episode,reward\n")
+                    for i, r in enumerate(reward_history):
+                        f.write(f"{i},{r}\n")
+                total_time = time.time() - start_time
+                print(f"total time: {total_time}")
                 break
     
-            
-            possible = False
-            temp_max_require = 200
-            while possible == False: 
-                for pid, info in stats.items():
+
+
+            # Mise à jour des stats thermiques
+            stats = save_heat_stats(piece_ids, nx, ny)
+            for pid, info in stats.items():
                     avg_temp = info["avg_temp"]
                     print(f"Piece {pid}: average temp = {avg_temp:.2f} °C")
 
-                stats  = save_heat_stats(piece_ids, nx, ny)
-                choice = min(stats.keys(), key=lambda pid: stats[pid]["avg_temp"])
 
-                print(f"piece selected: {choice}")
-                cool_time = get_cooling_time(choice)
-                print(f"pieces cool time: {cool_time}")
-                avg_temp_of_choice = stats[choice]["avg_temp"]
-                print(f"pieces temperature: {avg_temp_of_choice}")
+            state = agent.encode_state(stats, piece_ids)
 
-                if avg_temp_of_choice < temp_max_require:
-                    possible = True
-                else :
-                    time.sleep(10)
+            valid_actions = [pid for pid in piece_ids if stats[pid]["avg_temp"] < agent.temp_threshold]
+
+            # Ré-essayer toutes les 10s s'il n'y a aucune pièce imprimable
+            waiting_time = 0
+            while not valid_actions:
+                print("No pieces is cold enough. waiting of 10s...")
+                time.sleep(10)
+                waiting_time += 10  # compteur d'attente
+                stats = save_heat_stats(piece_ids, nx, ny)
+                for pid, info in stats.items():
+                    avg_temp = info["avg_temp"]
+                    print(f"Piece {pid}: average temp = {avg_temp:.2f} °C")
+                    print()
+                valid_actions = [pid for pid in piece_ids if stats[pid]["avg_temp"] < agent.temp_threshold]
+
+
+            reward = -1
+            if waiting_time == 0:
+                reward += 5
+            elif waiting_time < 30:
+                reward += 1
+            else:
+                reward -= 5
+
+
+            # Choisir une action valide via l’agent RL
+            choice = agent.choose_action(state, valid_actions)
+
+            # Mémoriser l’état et l’action actuels pour la prochaine boucle
+            prev_state = state
+            prev_action = choice
+
+            # Affichage (comme tu faisais déjà)
+            print("----------- AGENT CHOICE -------------")
+            print()
+            print(f"→ Ml chose : {choice}")
+            cool_time = get_cooling_time(choice)
+            print(f"cool time passed : {cool_time:.2f} s")
+            print(f"actual temp of the pieces {choice}: {stats[choice]['avg_temp']:.2f} °C")
+            print()
               
             # choice = int(input("Enter the piece number you want to print (1-4): "))
             set_piece_choice(choice)
+
+
 
             print(f"[auto] → Printing piece {choice}")
 
@@ -166,7 +240,7 @@ def main():
             idle = start_print(piece_id)
             print(f"→ Piece {piece_id} cooled for {idle:.2f}s since last print")
 
-            #fetch all the points in one layer printed
+            #fetch all the points in one layer printed and print the layer
             fetch.run_fetch_loop(path=path)
 
             end_print(piece_id)
@@ -199,16 +273,23 @@ def main():
 
             #compute the voxel representation
             voxel_grid= process_voxel(deposition_points, nz, nx, ny,layer_height,  fill_radius=3)
-            # show_slices(voxel_grid)
 
             _, bbox_path = save_bounding_boxes_from_grid(voxel_grid, current_piece)
 
-            #compute the heat propagation inside all pieces 
-            print("Starting the simulation of the heat")
-            output = simulate_heat(bbox_path, nz, nx, ny,cool_time, steps_per_layer=1)
+            print("⏳ Pause simulated for thermo stabilisation ...")
 
-            for i in range(nz):
-                visualize_slice(output, i)
+            time.sleep(5) 
+
+            print(f"🔁 Total reward for this episode: {episode_reward}")
+            reward_history.append(episode_reward)
+            episode_reward = 0
+
+            if prev_state is not None and prev_action is not None:
+                agent.update(prev_state, prev_action, reward, state, valid_actions)
+                episode_reward += reward
+
+
+            agent.decay_epsilon()
 
             print("-----------END LOOP-----------")            
             print()
@@ -218,6 +299,27 @@ def main():
     except KeyboardInterrupt:
         set_piece_choice(0)
         set_pause_printing(False)
+        stats = save_heat_stats(piece_ids, nx, ny)
+        display_stats(stats)
+        print("💾 Saving Q-table...")
+        print()
+        agent.save("q_table.pkl")
+        plt.figure(figsize=(10, 4))
+        plt.plot(reward_history, label="Total reward per episode")
+        plt.xlabel("episode")
+        plt.ylabel("Reward total")
+        plt.title("evolutin of AI performance")
+        plt.legend()
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig("reward_progress.png")  # sauvegarde image
+        plt.show()
+        with open("reward_history.csv", "w") as f:
+            f.write("episode,reward\n")
+            for i, r in enumerate(reward_history):
+                f.write(f"{i},{r}\n")
+        total_time = time.time() - start_time
+        print(f"total time: {total_time}")
         print("🏁 All done — exiting.")
         
 
