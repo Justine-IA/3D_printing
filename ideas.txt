@@ -1,1 +1,100 @@
 estimate the runtime of each layers
+
+ok awesome, now i want to change a big thing, right now what we do is we save the voxel of every pieces in one big voxel, i would like to save every pieces individually in it's own voxel but idk how to start, now that we have the id of each pieces it will be easier to compute the heat and everything in the future of each iundividual pieces, did u understand me ? i think for starter we have to, erase deposition file each time we print a new pieces, then we add it to it, and we do a voxel representation using voxel_grid script and its function then save each of them in it's own json with the number of pieces in the json name, or to save in the same json different voxel of each pieces, and when  then later when we call to see a slice we check the one we want inside, and later to compute the heat, we can do it for each different pieces on their own with their cooling times seperately what do u think i should do ? 
+
+
+
+ok it works ty ! now my goal is to train an AI to shorten as much as possible the time of printing according to the heat in each pieces, but first i would like to save the average temperature of each pieces, as well as it's heat_map that we do and later on for the AI i would think we feed it the heat_map of each pieces, and it take a decision what would u think
+
+
+ thinking of reinforcment learning, and the AI take the heat_map in entry of all the pieces, and gave us which pieces to print as the output, and if the avg_temp of this pieces is low enough we print it otherwisse we wait 10 seconds, the AI don't get any good points, but "bad one", then we call it again with more cool time so less temperature 
+Réflexion
+
+
+for later, doing cool time for each layer's as well as each voxel in order of the printing, do a real time fetching and updating of the heat instead of after each layers, 
+
+
+
+mettre en figure, le path sur robot studio puis, deposition point recreate en 3d, puis voxel representation puis heat map, tout cela pour montrer l'evolution du travail et la reproduction fidele des pieces imprimer virtuellement
+montre l'evolution de l'ia également, avec les different heat equation et aussi les résultats de l'algorithm
+
+2600 point en 100 secondes soit 26pts/sec
+
+→ Now printing piece 1
+
+Layer finished! Pausing printing...
+pause_printing set to True
+
+Saved 2650 new points. Total points now: 2650
+Printed piece 1 in 101.80s
+
+→ Now printing piece 2
+
+Layer finished! Pausing printing...
+pause_printing set to True
+
+Saved 894 new points. Total points now: 894
+Printed piece 2 in 35.35s
+
+→ Now printing piece 3
+
+Layer finished! Pausing printing...
+pause_printing set to True
+
+Saved 724 new points. Total points now: 724
+Printed piece 3 in 26.82s
+
+Layer counts: {0: 724} → keeping layers [0]
+
+→ Now printing piece 4
+
+Layer finished! Pausing printing...
+pause_printing set to True
+
+Saved 432 new points. Total points now: 432
+Printed piece 4 in 17.83s
+
+Layer counts: {1: 1, 0: 431} → keeping layers [0]
+
+
+[auto] → Printing piece 1
+→ Piece 1 cooled for 877.90s since last print
+pause_printing set to False
+
+→ Now printing piece 1
+
+Layer finished! Pausing printing...
+pause_printing set to True
+
+Saved 2652 new points. Total points now: 26563
+Printed piece 1 in 102.20s
+
+Layer counts: {0: 2650, 1: 2633, 2: 2637, 3: 2646, 4: 2747, 5: 2629, 6: 2673, 7: 2663, 8: 2634, 9: 2651} → keeping layers [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+number of layers:9
+Passing cool_time=0.06s for piece 1
+
+Data bounds:
+  Z: 468.9451 → 478.5461  (range=9.6010)
+→ actually used z‐slices: [0 1 2 3 4 5 6 7 8]
+[Voxel_grid] piece 1: found 2 blob(s)
+Per-layer bounding boxes and pixel coordinates stored (gzipped) in piece_1_bounding_boxes.json.gz
+
+
+[Voxel_grid] piece 1: saved bboxes → piece_1_bounding_boxes.json.gz
+
+final pieces info
+
+pieces cool time: 877.8961164000002
+pieces temperature: 398.49408376474935
+piece_choice set to 1
+[auto] → Printing piece 1
+→ Piece 1 cooled for 877.90s since last print
+pause_printing set to False
+
+
+Piece 1 has 9 layers
+Piece 1: average temp = 399.21 °C
+piece selected: 1
+pieces cool time: 25.842730800000027
+pieces temperature: 863.2786487379162

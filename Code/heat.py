@@ -32,9 +32,9 @@ def voxel_parameters(neighbor_temp, geom, nz, time_cooling):
     gap = geom["max_internal_gap"]
     number_layer = nz
 
-    alpha = (0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density)*((number_layer+4)/6)
-    beta = (0.02 + 0.03 * (1 - compactness) + 0.01 * (gap / 50.0))*(((time_cooling)+1/100)**1.5)
-    gamma = (1e-6 + 5e-6 * compactness + 1e-6 * (distance / 10.0))*(((time_cooling)+1/120)**1.2)
+    alpha = (0.8 * compactness + 0.9 * (1 / (1 + thickness)) + 0.8 * density)*((number_layer+23)/25)
+    beta = (0.03 + 0.01 * (1 - compactness) + 0.05 * (gap / 50.0))*(((time_cooling))**2) #for more realism divide cooling time by 10
+    gamma = (1e-6 + 5e-6 * compactness + 1e-6 * (distance /50.0))*(((time_cooling))**1.05) #for more realism divide cooling time by 12
 
     return alpha, beta, gamma
 
@@ -72,42 +72,6 @@ def simulate_heat(voxel_data_path, nz, nx, ny,time_cooling,  T_init=20.0, T_amb=
             T = T_new
 
     return T
-
-
-# def export_pixel_temperatures(T, voxel_data_path, out_csv="piece_pixel_temps.csv"):
-#     """
-#     Given the 3D temperature array T[z,y,x] and the voxel dump,
-#     writes out CSV rows: piece_id, z, x, y, temperature
-#     """
-#     # 1) load your bounding-box + active_pixels info
-#     with gzip.open(voxel_data_path, "rt") as f:
-#         bbox_data = json.load(f)
-
-#     # 2) open CSV
-#     with open(out_csv, "w", newline="") as f:
-#         writer = csv.writer(f)
-#         writer.writerow(["piece_id", "z", "x", "y", "temperature"])
-
-#         # 3) iterate pieces → layers → pixels
-#         for pid_str, layers in bbox_data.items():
-#             pid = int(pid_str)
-#             for z_str, info in layers.items():
-#                 z = int(z_str)
-#                 bb_min, _ = info["bounding_box"]
-#                 for rel_y, rel_x in info["active_pixels"]:
-#                     x = bb_min[0] + rel_x
-#                     y = bb_min[1] + rel_y
-#                     # bounds-check
-#                     if (0 <= z < T.shape[0]
-#                         and 0 <= y < T.shape[1]
-#                         and 0 <= x < T.shape[2]):
-#                         writer.writerow([pid, z, x, y, T[z,y,x]])
-
-#     print(f"→ Exported pixel temperatures for {len(bbox_data)} pieces to {out_csv}")
-
-
-
-
 
 def load_piece_bbox(piece_id, path_template="piece_{id}_bounding_boxes.json.gz"):
     """

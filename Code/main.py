@@ -65,7 +65,6 @@ def main():
 
             deposition_points = json.load(open(path))
 
-
             layer_height =  1.0     #printer’s layer height in mm
             min_pts     = 50
             deposition_points = filter_points_by_layer(deposition_points, layer_height=layer_height, min_points=min_pts )
@@ -134,8 +133,10 @@ def main():
                 try:
                     nz = fetch_number_of_layer(url)
                     print(f"Piece {piece_id} has {nz} layers")
-                    
-                    if nz >= number_of_layers_to_print:
+
+                    threshold = 5 if piece_id == 1 else number_of_layers_to_print
+
+                    if nz >= threshold :   
                         to_remove.append(piece_id)
                         print(f"Piece {piece_id} has reached {number_of_layers_to_print} layers - removing from queue")
                 except Exception as e:
@@ -172,12 +173,10 @@ def main():
                     for i, r in enumerate(reward_history):
                         f.write(f"{i},{r}\n")
                 total_time = time.time() - start_time
-                print(f"total time: {total_time}")
+                print(f" AI total time: {total_time}")
                 break
-    
 
-
-            # Mise à jour des stats thermiques
+            #update thermal stats
             stats = save_heat_stats(piece_ids, nx, ny)
             for pid, info in stats.items():
                     avg_temp = info["avg_temp"]
@@ -188,17 +187,20 @@ def main():
 
             valid_actions = [pid for pid in piece_ids if stats[pid]["avg_temp"] < agent.temp_threshold]
 
-            # Ré-essayer toutes les 10s s'il n'y a aucune pièce imprimable
+            # trying every 10 seconds if no pieces available
             waiting_time = 0
             while not valid_actions:
+                print()
                 print("No pieces is cold enough. waiting of 10s...")
+
                 time.sleep(10)
-                waiting_time += 10  # compteur d'attente
+                waiting_time += 10  
                 stats = save_heat_stats(piece_ids, nx, ny)
                 for pid, info in stats.items():
                     avg_temp = info["avg_temp"]
                     print(f"Piece {pid}: average temp = {avg_temp:.2f} °C")
-                    print()
+                    cool_time = get_cooling_time(pid)
+                    print(f"pieces cool time: {cool_time}")
                 valid_actions = [pid for pid in piece_ids if stats[pid]["avg_temp"] < agent.temp_threshold]
 
 
@@ -211,14 +213,13 @@ def main():
                 reward -= 5
 
 
-            # Choisir une action valide via l’agent RL
+            # choose a valid action
             choice = agent.choose_action(state, valid_actions)
 
-            # Mémoriser l’état et l’action actuels pour la prochaine boucle
+            # memorized the state of the action
             prev_state = state
             prev_action = choice
 
-            # Affichage (comme tu faisais déjà)
             print("----------- AGENT CHOICE -------------")
             print()
             print(f"→ Ml chose : {choice}")
@@ -308,18 +309,18 @@ def main():
         plt.plot(reward_history, label="Total reward per episode")
         plt.xlabel("episode")
         plt.ylabel("Reward total")
-        plt.title("evolutin of AI performance")
+        plt.title("evolution of AI performance")
         plt.legend()
         plt.grid()
         plt.tight_layout()
-        plt.savefig("reward_progress.png")  # sauvegarde image
+        plt.savefig("reward_progress.png")
         plt.show()
         with open("reward_history.csv", "w") as f:
             f.write("episode,reward\n")
             for i, r in enumerate(reward_history):
                 f.write(f"{i},{r}\n")
         total_time = time.time() - start_time
-        print(f"total time: {total_time}")
+        print(f" AI total time: {total_time}")
         print("🏁 All done — exiting.")
         
 

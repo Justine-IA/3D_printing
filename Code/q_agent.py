@@ -4,8 +4,8 @@ import random
 import pickle
 
 class QAgent:
-    def __init__(self, alpha=0.1, gamma=0.9, epsilon=0.2, temp_threshold=200):
-        self.q_table = {}  # dictionnaire : (state, action) → Q-value
+    def __init__(self, alpha=0.1, gamma=0.9, epsilon=0.2, temp_threshold=400):
+        self.q_table = {}  # dictionnary : (state, action) → Q-value
         self.alpha = alpha
         self.gamma = gamma
         self.epsilon = epsilon

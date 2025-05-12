@@ -59,7 +59,7 @@ def main():
             deposition_points = filter_points_by_layer(deposition_points, layer_height=layer_height, min_points=min_pts )
 
             #show the points collected
-            #recreating_the_map(deposition_points)
+            # recreating_the_map(deposition_points)
 
             print()
             url_number_of_layers = (
@@ -99,10 +99,15 @@ def main():
 
 
         piece_ids = [1, 2, 3, 4]
-        number_of_layers_to_print = 5
+        number_of_layers_to_print = 10
 
         stats = save_heat_stats(piece_ids, nx, ny)
         display_stats(stats)
+
+        piece_order = sorted(piece_ids)  # par ex. [1, 2, 3, 4]
+        current_index = 0
+        temp_max_require = 200
+
         while True:
             
             print("-----------NEW LOOP-----------")
@@ -117,8 +122,10 @@ def main():
                 try:
                     nz = fetch_number_of_layer(url)
                     print(f"Piece {piece_id} has {nz} layers")
-                    
-                    if nz >= number_of_layers_to_print:
+
+                    threshold = 5 if piece_id == 1 else number_of_layers_to_print
+
+                    if nz >= threshold :                            
                         to_remove.append(piece_id)
                         print(f"Piece {piece_id} has reached {number_of_layers_to_print} layers - removing from queue")
                 except Exception as e:
@@ -134,12 +141,34 @@ def main():
             if not piece_ids:
                 print("All pieces have reached 6 layers. Printing complete!")
                 total_time = time.time() - start_time
-                print(f"total time: {total_time}")
+                print(f"ALGO total time: {total_time}")
+                set_piece_choice(0)
+                set_pause_printing(False)
                 break
     
+            # choice = next(pid for pid in sorted(piece_ids) if stats[pid]["avg_temp"] < 200)
+
             
+            # choice = None
+            # while choice is None:
+            #     stats = save_heat_stats(piece_ids, nx, ny)
+
+            #     attempts = 0
+            #     while attempts < len(piece_order):
+            #         pid = piece_order[current_index % len(piece_order)]
+            #         current_index += 1
+
+            #         if pid in piece_ids and stats[pid]["avg_temp"] < temp_max_require:
+            #             choice = pid
+            #             break
+            #         attempts += 1
+
+            #     if choice is None:
+            #         print("❌ Aucune pièce n’est prête. Attente 10s...")
+            #         time.sleep(10)
+
             possible = False
-            temp_max_require = 200
+            temp_max_require = 400
             while possible == False: 
                 for pid, info in stats.items():
                     avg_temp = info["avg_temp"]
@@ -158,6 +187,8 @@ def main():
                     possible = True
                 else :
                     time.sleep(10)
+
+
               
             # choice = int(input("Enter the piece number you want to print (1-4): "))
             set_piece_choice(choice)
@@ -219,7 +250,7 @@ def main():
         set_piece_choice(0)
         set_pause_printing(False)
         total_time = time.time() - start_time
-        print(f"total time: {total_time}")
+        print(f"Algo total time: {total_time}")
         print("🏁 All done — exiting.")
         
 
