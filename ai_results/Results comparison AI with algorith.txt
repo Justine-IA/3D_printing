@@ -1,0 +1,63 @@
+Results comparison AI with algorithm
+
+in total for 5 layers, AI did : total time: 3429.826719522476 secondes
+Algorithms that chose a pieces took : total time: 3394.723239183426
+
+
+image 1 and 2 
+With train first time and different heat parameter to accelerate the cooling of pieces : total time: 1560.8739635944366
+another one with 5 layers same condition: total time: 1548.4289395809174
+for the algorithm: total time: 1604.1155602931976
+
+
+
+image 3
+now with 10 layers to print, and those heat conditions :     
+alpha = (0.4 * compactness + 0.5 * (1 / (1 + thickness)) + 0.9 * density)*((number_layer+8)/10)
+beta = (0.02 + 0.03 * (1 - compactness) + 0.01 * (gap / 50.0))*(((time_cooling)+1/100)**3)
+gamma = (1e-6 + 5e-6 * compactness + 1e-6 * (distance / 10.0))*(((time_cooling)+1/120)**1.05)
+total time RL : 7274.267529249191
+total time algorithm: 7247.03988170623
+
+
+total time with a simple queue algorithm: total time: 6535.7114906311035 
+
+
+
+
+[4] images 4 with graph
+alpha = (0.8 * compactness + 0.9 * (1 / (1 + thickness)) + 0.8 * density)*((number_layer+18)/20)
+beta = (0.03 + 0.01 * (1 - compactness) + 0.05 * (gap / 50.0))*(((time_cooling))**2) #for more realism divide cooling time by 10
+gamma = (1e-6 + 5e-6 * compactness + 1e-6 * (distance /25.0))*(((time_cooling))**1.03) #for more realism divide cooling time by 12
+
+AI total time: 6314.763220071793
+without AI: total time: 7271.213622093201
+
+
+[5] trial
+alpha = (0.8 * compactness + 0.9 * (1 / (1 + thickness)) + 0.8 * density)*((number_layer+23)/25)
+beta = (0.03 + 0.01 * (1 - compactness) + 0.05 * (gap / 50.0))*(((time_cooling))**2) #for more realism divide cooling time by 10
+gamma = (1e-6 + 5e-6 * compactness + 1e-6 * (distance /50.0))*(((time_cooling))**1.05) #for more realism divide cooling time by 12
+Using 10 layers for every peices except the most complex the first one with only 5 layer to keep it more balanced
+first try
+AI total time: 2668.8855011463165
+ALGO total time: 2629.9508848190308
+
+second try while keeping the model trained just on that:
+AI total time: 2575.979248523712
+png saved Under 5_2
+third try same condition:
+
+
+
+send heat.py
+
+methods write the big picture, motivate approach, explain what is needed, approach for similar problems
+simulation approach, comm…
+motivate them, 
+no physical system so is my methods useful with it, 
+
+methods use literature to prove our point
+difference software, comm … 
+implementation evaluate it, 
+discuss results

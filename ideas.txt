@@ -16,6 +16,7 @@ for later, doing cool time for each layer's as well as each voxel in order of th
 
 
 mettre en figure, le path sur robot studio puis, deposition point recreate en 3d, puis voxel representation puis heat map, tout cela pour montrer l'evolution du travail et la reproduction fidele des pieces imprimer virtuellement
+
 montre l'evolution de l'ia également, avec les different heat equation et aussi les résultats de l'algorithm
 
 2600 point en 100 secondes soit 26pts/sec

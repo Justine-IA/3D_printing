@@ -12,7 +12,7 @@ def load_voxel_data(gz_file):
         return json.load(f)
 
 def heat_equation_ode(T, Q, T_amb, alpha, beta, gamma):
-    return alpha * Q - beta * (T - T_amb) - gamma * (T**4 - T_amb)
+    return alpha * Q - beta * (T - T_amb) - gamma * (T**4 - T_amb**4)
 
 
 def get_voxel_neighbors(temp_grid, z, y, x):

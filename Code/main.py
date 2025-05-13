@@ -138,7 +138,7 @@ def main():
 
                     if nz >= threshold :   
                         to_remove.append(piece_id)
-                        print(f"Piece {piece_id} has reached {number_of_layers_to_print} layers - removing from queue")
+                        print(f"Piece {piece_id} has reached {threshold} layers - removing from queue")
                 except Exception as e:
                     print(f"Error checking layers for piece {piece_id}: {e}")
                     continue
@@ -150,7 +150,7 @@ def main():
             
             # Exit condition - all pieces completed
             if not piece_ids:
-                print("All pieces have reached 6 layers. Printing complete!")
+                print("All pieces have reached their final layers. Printing complete!")
                 set_piece_choice(0)
                 set_pause_printing(False)
                 stats = save_heat_stats(piece_ids, nx, ny)
@@ -162,7 +162,7 @@ def main():
                 plt.plot(reward_history, label="Total reward per episode")
                 plt.xlabel("episode")
                 plt.ylabel("Reward total")
-                plt.title("evolutin of AI performance")
+                plt.title("evolution of AI performance")
                 plt.legend()
                 plt.grid()
                 plt.tight_layout()
