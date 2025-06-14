@@ -1,5 +1,6 @@
 from requests.auth import HTTPDigestAuth
 from ABB_control import fetch_layer, fetch_welding, set_pause_printing, fetch_pieces_being_print
+from maping import RealTime3DMap
 import requests
 import time
 import json
@@ -21,7 +22,9 @@ auth = HTTPDigestAuth("Default User", "robotics")
 
 deposition_points = []
 
-
+# Initialize the 3D map if needede live visualization
+# map_3d = RealTime3DMap()
+    
 # Function to fetch and print x, y, z values
 def fetch_xyz():
     try:
@@ -86,7 +89,8 @@ def run_fetch_loop(path):
             # c) Collect points
             if x is not None and y is not None and weld:
                 deposition_points.append((x, y, z))
-
+                # Update the 3D map with the new point
+                #map_3d.update_plot(x, y, z)
             # d) Detect layer completion
             if fetch_layer():
                 print("Layer finished! Pausing printing...")

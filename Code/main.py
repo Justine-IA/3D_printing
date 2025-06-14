@@ -70,7 +70,7 @@ def main():
             deposition_points = filter_points_by_layer(deposition_points, layer_height=layer_height, min_points=min_pts )
 
             #show the points collected
-            #recreating_the_map(deposition_points)
+            # recreating_the_map(deposition_points)
 
             print()
             url_number_of_layers = (

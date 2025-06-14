@@ -33,8 +33,8 @@ def point_to_voxel_indices(x, y, z,
 # ---------------------------
 def fill_local_2d(voxel_grid, ix, iy, iz, radius=1):
     nx, ny, nz = voxel_grid.shape
-    for dx in range(-radius, radius + 1):
-        for dy in range(-radius, radius + 1):
+    for dx in range(-radius, radius ):
+        for dy in range(-radius, radius ):
             x_idx = ix + dx
             y_idx = iy + dy
             if 0 <= x_idx < nx and 0 <= y_idx < ny:
